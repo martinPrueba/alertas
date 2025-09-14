@@ -1,0 +1,8 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+
+  padding: 0;  /* quita cualquier padding */
+  overflow-y: hidden; /* todo el contenido queda dentro del viewport */
+
+}
