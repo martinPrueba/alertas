@@ -32,6 +32,9 @@
             </tbody>
           </table>
         </div>
+
+
+            <ProcessIconsTable />
       </section>
 
         <footer class="modal-footer">
@@ -57,6 +60,7 @@ const close = () => {
 
 import { ref, onMounted } from "vue";
 import axios from "axios";
+import ProcessIconsTable from "./ProcessIconsTable.vue"; // 👈 importa el componente hijo
 
 const columns = ref([]); // columnas desde la API
 
