@@ -31,27 +31,68 @@
         </tbody>
       </table>
     </div>
+
+
+        <!-- Aquí incluyes el modal -->
+    <EditarProceso
+      :mostrar="mostrarModal"
+      :proceso="procesoSeleccionado"
+      @cerrar="cerrarModal"
+      @actualizado="actualizarLocal"
+    />
+
   </div>
+
+
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
+import EditarProceso from "./EditarProceso.vue"; // 👈 Import
 
 const procesos = ref([]);
+const mostrarModal = ref(false);
+const procesoSeleccionado = ref({});
 
 const cargarProcesos = async () => {
   try {
     const response = await axios.get("http://localhost:8080/api/process-icons/get-all");
-    procesos.value = response.data;
+
+    // convertir {key: value} en [{ proceso: key, iconUrl: value }]
+    procesos.value = Object.entries(response.data).map(([proceso, iconUrl], index) => ({
+      id: index + 1,
+      proceso,
+      iconUrl: iconUrl !== "No existe un icono asociado a este proceso." ? iconUrl : null
+    }));
+
+    console.log("Procesos transformados:", procesos.value);
   } catch (error) {
     console.error("Error cargando procesos:", error);
   }
 };
 
+
 const editarProceso = (proceso) => {
-  alert(`Editar proceso: ${proceso.proceso}`);
+  procesoSeleccionado.value = { ...proceso }; // clonar
+  mostrarModal.value = true;
+console.log("esto nos llego de proceso " + JSON.stringify(proceso));
   // Aquí puedes abrir un modal para actualizar el iconUrl
+  console.log("mostrarModal", mostrarModal.value);
+
+};
+
+// cerrar modal
+const cerrarModal = () => {
+  mostrarModal.value = false;
+};
+
+// actualizar la tabla local cuando se guarde en el modal
+const actualizarLocal = (procesoActualizado) => {
+  const index = procesos.value.findIndex(p => p.proceso === procesoActualizado.proceso);
+  if (index !== -1) {
+    procesos.value[index].iconUrl = procesoActualizado.iconUrl;
+  }
 };
 
 onMounted(() => {

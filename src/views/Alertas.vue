@@ -2,14 +2,21 @@
   <div class="layout">
     <!-- Columna izquierda: filtros -->
     <aside class="filtros">
-      <AlertFilter />
+      <AlertFilter @filtrar="filtrosAplicados = $event" />
+
+      <!-- Control del intervalo de actualización -->
+      <RefreshIntervalInput @interval-updated="onIntervalUpdated" />
     </aside>
 
     <!-- Columna derecha: mapa + tabla -->
     <main class="contenido">
       <!-- Mapa ocupa el espacio grande -->
       <section class="mapa">
-        <GoogleMap />
+        <!-- ref para poder llamar reload() desde el padre -->
+        <GoogleMap
+          :filtros="filtrosAplicados"
+          ref="mapRef"
+        />
       </section>
 
       <!-- Tabla abajo -->
@@ -20,10 +27,14 @@
   </div>
 </template>
 
+
 <script setup>
+import { ref } from "vue";                      // ⬅️ añadido
 import AlertFilter from "../components/alertas/AlertFilter.vue";
 import GoogleMap from "../components/alertas/GoogleMap.vue";
 import ReportTable from "../components/alertas/ReportTable.vue";
+
+const filtrosAplicados = ref({});               // ⬅️ estado de filtros
 </script>
 
 <style scoped>

@@ -1,53 +1,191 @@
-<template>
-  <div class="map-container" ref="mapRef"></div>
-</template>
-
+<!-- src/components/alertas/GoogleMap.vue -->
 <script setup>
-import { ref, onMounted } from 'vue';
-import { loadGoogleMaps } from '@/utils/loadGoogleMaps';
+import { ref, onMounted, onUnmounted, watch } from "vue"; // 👈 añadido onUnmounted
+import axios from "axios";
+import { loadGoogleMaps } from "@/utils/loadGoogleMaps";
+import AlertasTableModal from "./AlertasTableModal.vue";
+import emitter from "@/utils/emitter"; // 👈 añadido
+
+const props = defineProps({
+  // ⬅️ Recibimos filtros desde la vista
+  filtros: { type: Object, default: () => ({}) },
+});
 
 const mapRef = ref(null);
 let map = null;
+let gmaps = null;
+let markers = [];
+
+const mostrarModal = ref(false);
+const alertaIdSeleccionada = ref(null);
+
+const abrirModal = (id) => {
+  alertaIdSeleccionada.value = id;
+  mostrarModal.value = true;
+};
+
+// 🔹 Helper para extraer mensaje de error del backend/Axios
+const errMsg = (err, fallback) =>
+  err?.response?.data?.message ||
+  err?.response?.data?.error ||
+  err?.message ||
+  fallback ||
+  "Error desconocido";
+
+// Limpia todos los marcadores del mapa
+const limpiarMarcadores = () => {
+  markers.forEach((m) => m.setMap(null));
+  markers = [];
+};
+
+// Decide endpoint según si hay filtros y dibuja
+const cargarAlertas = async (f = {}) => {
+  try {
+    // Quitamos filtros vacíos para no enviar params en blanco
+    const params = Object.fromEntries(
+      Object.entries(f || {}).filter(([, v]) => v !== "" && v != null)
+    );
+
+    const tieneFiltros = Object.keys(params).length > 0;
+
+    const url = tieneFiltros
+      ? "http://localhost:8080/api/alertas/filter"
+      : "http://localhost:8080/api/alertas/get-all-alerts";
+
+    const { data } = await axios.get(url, { params });
+
+    // 🔸 Si la API respondió 200 pero con payload de error, lo mostramos
+    if (data && !Array.isArray(data) && (data.error || data.message)) {
+      alert(`❌ ${data.error || data.message}`);
+      return;
+    }
+
+    limpiarMarcadores();
+
+    // Tu backend suele devolver: [ { alertas: [...], alertasLeidas: [...] } ]
+    const wrapper = Array.isArray(data) ? data[0] : data;
+    const alertas       = wrapper?.alertas ?? [];
+    const alertasLeidas = wrapper?.alertasLeidas ?? [];
+
+    // Unificamos añadiendo bandera 'leida' para reutilizar la misma rutina de pintado
+    const todas = [
+      ...alertas.map((a) => ({ ...a, leida: false })),
+      ...alertasLeidas.map((a) => ({ ...a, leida: true })),
+    ];
+
+    for (const a of todas) {
+      if (!a.gpsx || !a.gpsy) continue;
+
+      let iconUrl;
+      if (a.leida) {
+        // 🔵 Leídas: color celeste fuerte (sin icono de proceso)
+        const svg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+            <circle cx="20" cy="20" r="18" fill="deepskyblue" stroke="blue" stroke-width="2"/>
+          </svg>
+        `;
+        iconUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+      } else {
+        // 🔴 No leídas: icono del proceso o rojo
+        iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+      }
+
+      const marker = new gmaps.Marker({
+        position: { lat: a.gpsy, lng: a.gpsx }, // lat = gpsy, lng = gpsx
+        map,
+        title: a.nombre,
+        icon: {
+          url: iconUrl,
+          scaledSize: new gmaps.Size(40, 40),
+        },
+      });
+
+      marker.addListener("mouseover", () => {
+        abrirModal(a.alertaid);
+        console.log("👉 Hover alertaId:", a.alertaid);
+      });
+
+      markers.push(marker);
+    }
+  } catch (err) {
+    const msg = errMsg(err, "Error cargando alertas");
+    alert(`❌ ${msg}`);
+    console.error("❌ Error cargando alertas:", err);
+  }
+};
+
+// 👂 Handler que atiende el evento del bus para refrescar el mapa
+const handleRefresh = () => {
+  if (!gmaps || !map) return;
+  console.log("[GoogleMap] REFRESH_MAP recibido → recargando alertas…");
+  cargarAlertas(props.filtros || {});
+};
+
+// Reacciona a cambios en los filtros que llegan desde la vista
+watch(
+  () => props.filtros,
+  (nuevo) => cargarAlertas(nuevo),
+  { deep: true, immediate: false }
+);
 
 onMounted(async () => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    console.error('⚠️ Falta VITE_GOOGLE_MAPS_API_KEY en tu .env.local');
+    console.error("⚠️ Falta VITE_GOOGLE_MAPS_API_KEY en tu .env.local");
     return;
   }
 
   try {
     const maps = await loadGoogleMaps(apiKey);
+    gmaps = maps;
 
-    // IMPORTANTE: el contenedor debe tener alto explícito
-    map = new maps.Map(mapRef.value, {
-      center: { lat: -33.4489, lng: -70.6693 }, // Ej: Santiago
-      zoom: 12,
+    map = new gmaps.Map(mapRef.value, {
+      center: { lat: -33.4489, lng: -70.6693 }, // Santiago
+      zoom: 6,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
     });
 
-    // Ejemplo: agrega un marcador cuando el mapa termine de cargar
-    maps.event.addListenerOnce(map, 'idle', () => {
-      new maps.Marker({
-        position: { lat: -33.4489, lng: -70.6693 },
-        map,
-        title: 'Ejemplo',
-      });
-    });
+    // Primera carga: sin filtros (o con los que vengan ya seteados)
+    await cargarAlertas(props.filtros || {});
+
+    // 👂 Suscribirse al bus para refrescos periódicos / cambios de intervalo
+    emitter.on("REFRESH_MAP", handleRefresh);
+    emitter.on("REFRESH_INTERVAL_CHANGED", handleRefresh); // opcional
   } catch (err) {
-    console.error('❌ Error cargando Google Maps:', err);
+    console.error("❌ Error cargando Google Maps:", err);
+  }
+});
+
+onUnmounted(() => {
+  emitter.off("REFRESH_MAP", handleRefresh);
+  emitter.off("REFRESH_INTERVAL_CHANGED", handleRefresh);
+});
+
+// Exponer método para que el padre pueda forzar reload si lo desea
+defineExpose({
+  reload: () => {
+    cargarAlertas(props.filtros || {});
   }
 });
 </script>
 
+<template>
+  <div class="map-container" ref="mapRef"></div>
+
+  <AlertasTableModal
+    :mostrar="mostrarModal"
+    :alertaId="alertaIdSeleccionada"
+    @cerrar="mostrarModal = false"
+  />
+</template>
+
 <style scoped>
 .map-container {
   width: 100%;
-  height: 500px;    /* dale altura explícita (ajusta a tu layout) */
+  height: 500px;
   border: 1px solid #ddd;
   border-radius: 6px;
-  box-sizing: border-box;
 }
 </style>

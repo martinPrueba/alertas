@@ -35,6 +35,8 @@
 
 
             <ProcessIconsTable />
+            
+            <RefreshIntervalInput />
       </section>
 
         <footer class="modal-footer">
@@ -58,9 +60,11 @@ const close = () => {
   emit("close");
 };
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import axios from "axios";
 import ProcessIconsTable from "./ProcessIconsTable.vue"; // 👈 importa el componente hijo
+import RefreshIntervalInput from "./RefreshIntervalInput.vue"; // 👈 importa el componente hijo
+import emitter from "@/utils/emitter"; // 👈 bus de eventos (mitt) para notificar al GoogleMap
 
 const columns = ref([]); // columnas desde la API
 
@@ -68,18 +72,19 @@ const columns = ref([]); // columnas desde la API
 const toggleVisibility = async (col) => {
   console.log(`Columna ${col.fieldName} ahora es ${col.visible}`);
   try {
-    // Aquí puedes llamar al backend para actualizar el estado
     await axios.put("http://localhost:8080/api/visible-fields/update-all", col);
   } catch (error) {
     console.error("Error actualizando visibilidad:", error);
   }
 };
 
-
 // 🔥 Botón Guardar: envía todo a la API
 const guardarCambios = async () => {
   try {
-    const response = await axios.put("http://localhost:8080/api/visible-fields/update-all", columns.value);
+    const response = await axios.put(
+      "http://localhost:8080/api/visible-fields/update-all",
+      columns.value
+    );
     console.log("Respuesta backend:", response.data);
     alert("Configuración guardada correctamente ✅");
   } catch (error) {
@@ -88,22 +93,68 @@ const guardarCambios = async () => {
   }
 };
 
-
+// 📥 Carga de columnas visibles
 onMounted(async () => {
   try {
-    // Llamada a la API para traer todas las columnas
     const response = await axios.get("http://localhost:8080/api/visible-fields/get-all");
-    columns.value = response.data; // [{fieldName, visible}, ...]
+    // 🔄 transformar { key: value } → [{ fieldName, visible }]
+    columns.value = Object.entries(response.data).map(([key, value]) => ({
+      fieldName: key,
+      visible: value
+    }));
+    console.log("📌 Columnas cargadas:", columns.value);
   } catch (error) {
     console.error("Error cargando columnas:", error);
   }
+
+  // ▶️ Arranca el ciclo de auto-refresh
+  refreshTick();
 });
 
+/* ============================
+   🕒 Auto-refresh del GoogleMap
+   ============================ */
+const GET_REFRESH_URL = "http://localhost:8080/api/alertas/get/refresh-interval";
+const refreshSeconds = ref(30);
+let refreshTimeoutId = null;
 
+// Programa el siguiente tick
+const scheduleNextTick = (sec) => {
+  clearTimeout(refreshTimeoutId);
+  const s = Math.max(5, Number(sec) || 30);
+  refreshTimeoutId = setTimeout(refreshTick, s * 1000);
+};
 
+// Tick: lee segundos, emite REFRESH_MAP, reprograma
+const refreshTick = async () => {
+  try {
+    const { data } = await axios.get(GET_REFRESH_URL);
+    // Puede venir { seconds: n } o un número directo, o {message/error}
+    let s =
+      typeof data?.seconds === "number"
+        ? data.seconds
+        : Number.isFinite(data)
+        ? Number(data)
+        : refreshSeconds.value;
 
+    if (!Number.isFinite(s) || s < 5) s = 30;
+    refreshSeconds.value = s;
 
+    // 🔔 Notifica al mapa para que se recargue (GoogleMap escucha REFRESH_MAP)
+    emitter.emit("REFRESH_MAP");
+  } catch (e) {
+    console.error("⚠️ No se pudo obtener refresh-interval:", e?.response?.data || e.message);
+    // Aunque falle, continúa con el valor vigente
+  } finally {
+    scheduleNextTick(refreshSeconds.value);
+  }
+};
+
+onUnmounted(() => {
+  clearTimeout(refreshTimeoutId);
+});
 </script>
+
 
 <style scoped>
 .modal-overlay {
