@@ -33,6 +33,33 @@
           </table>
         </div>
 
+        <h5>Configuración opciones de filtro</h5>
+
+        <!-- Tabla con scroll horizontal -->
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Columna</th>
+                <th>Visible</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="col in columnsFilter" :key="col.fieldName">
+                <td>{{ col.fieldName }}</td>
+                <td>
+                  <!-- Checkbox refleja el valor de visible -->
+                  <input
+                    type="checkbox"
+                    v-model="col.visible"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+
 
             <ProcessIconsTable />
             
@@ -40,7 +67,7 @@
       </section>
 
         <footer class="modal-footer">
-        <button class="btn" @click="guardarCambios">Guardar</button>
+        <button class="btn" @click="guardarCambios(); guardarCambiosFilter();">Guardar</button>
         <button class="btn btn-secondary" @click="close">Cerrar</button>
         </footer>
 
@@ -67,6 +94,7 @@ import RefreshIntervalInput from "./RefreshIntervalInput.vue"; // 👈 importa e
 import emitter from "@/utils/emitter"; // 👈 bus de eventos (mitt) para notificar al GoogleMap
 
 const columns = ref([]); // columnas desde la API
+const columnsFilter = ref([]); // columnas desde la API
 
 // Cuando cambia el checkbox
 const toggleVisibility = async (col) => {
@@ -86,12 +114,28 @@ const guardarCambios = async () => {
       columns.value
     );
     console.log("Respuesta backend:", response.data);
-    alert("Configuración guardada correctamente ✅");
   } catch (error) {
     console.error("Error al guardar:", error);
     alert("❌ Error al guardar cambios");
   }
+
+
+  try {
+    const responseSaveFilter = await axios.put(
+      "http://localhost:8080/api/visible-fields-filter/update-all",
+      columnsFilter.value
+    );
+    console.log("Respuesta backend:", responseSaveFilter.data);
+  } catch (error) {
+    console.error("Error al guardar:", error);
+    alert("❌ Error al guardar cambios");
+  }
+
+
+  alert("Configuración guardada correctamente ✅");
+
 };
+
 
 // 📥 Carga de columnas visibles
 onMounted(async () => {
@@ -106,6 +150,21 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error cargando columnas:", error);
   }
+
+
+  //agregar que se muestren para las columnas del filtro
+    try {
+    const responseApiFilter = await axios.get("http://localhost:8080/api/visible-fields-filter/get-all");
+    // 🔄 transformar { key: value } → [{ fieldName, visible }]
+    columnsFilter.value = Object.entries(responseApiFilter.data).map(([key, value]) => ({
+      fieldName: key,
+      visible: value
+    }));
+    console.log("📌 Columnas cargadas filter:", columnsFilter.value);
+  } catch (error) {
+    console.error("Error cargando columnas:", error);
+  }
+
 
   // ▶️ Arranca el ciclo de auto-refresh
   refreshTick();

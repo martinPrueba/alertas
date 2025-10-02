@@ -54,6 +54,8 @@ const filtrosAplicados = ref({});               // ⬅️ estado de filtros
   border-right: 1px solid #ccc;
   padding: 40px;        /* espacio interno */
   box-sizing: border-box;
+  overflow-y: auto;
+
 }
 
 /* Columna derecha */
