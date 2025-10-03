@@ -67,7 +67,7 @@
       </section>
 
         <footer class="modal-footer">
-        <button class="btn" @click="guardarCambios(); guardarCambiosFilter();">Guardar</button>
+        <button class="btn" @click="guardarCambios();">Guardar</button>
         <button class="btn btn-secondary" @click="close">Cerrar</button>
         </footer>
 
@@ -133,6 +133,8 @@ const guardarCambios = async () => {
 
 
   alert("Configuración guardada correctamente ✅");
+
+  window.location.reload();
 
 };
 
