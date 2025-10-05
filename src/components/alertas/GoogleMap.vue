@@ -38,36 +38,45 @@ const limpiarMarcadores = () => {
   markers = [];
 };
 
-// Decide endpoint según si hay filtros y dibuja
 const cargarAlertas = async (f = {}) => {
   try {
-    // Quitamos filtros vacíos para no enviar params en blanco
-    const params = Object.fromEntries(
+    // 🔸 Quitamos filtros vacíos
+    const filtrosLlenos = Object.fromEntries(
       Object.entries(f || {}).filter(([, v]) => v !== "" && v != null)
     );
 
-    const tieneFiltros = Object.keys(params).length > 0;
+    const tieneFiltros = Object.keys(filtrosLlenos).length > 0;
 
-    const url = tieneFiltros
-      ? "http://localhost:8080/api/alertas/filter"
-      : "http://localhost:8080/api/alertas/get-all-alerts";
+    let data;
 
-    const { data } = await axios.get(url, { params });
-
-    // 🔸 Si la API respondió 200 pero con payload de error, lo mostramos
-    if (data && !Array.isArray(data) && (data.error || data.message)) {
-      alert(`❌ ${data.error || data.message}`);
-      return;
+    // 🔹 Si viene "alarmasActivas: true" → llamamos a esa API directamente
+    if (filtrosLlenos.alarmasActivas === true) {
+      console.log("🔹 Solicitando solo alarmas activas...");
+      const response = await axios.get("http://localhost:8080/api/alertas/get-alertas-activas");
+      data = response.data;
+    } 
+    else if (tieneFiltros) {
+      // 👇 Si hay otros filtros → usamos el endpoint dinámico
+      const response = await axios.post(
+        "http://localhost:8080/api/alertas/filter-dynamic",
+        filtrosLlenos
+      );
+      data = response.data;
+    } 
+    else {
+      // 👇 Si no hay filtros, traemos todas las alertas
+      const response = await axios.get(
+        "http://localhost:8080/api/alertas/get-all-alerts"
+      );
+      data = response.data;
     }
 
     limpiarMarcadores();
 
-    // Tu backend suele devolver: [ { alertas: [...], alertasLeidas: [...] } ]
     const wrapper = Array.isArray(data) ? data[0] : data;
-    const alertas       = wrapper?.alertas ?? [];
+    const alertas = wrapper?.alertas ?? data ?? [];
     const alertasLeidas = wrapper?.alertasLeidas ?? [];
 
-    // Unificamos añadiendo bandera 'leida' para reutilizar la misma rutina de pintado
     const todas = [
       ...alertas.map((a) => ({ ...a, leida: false })),
       ...alertasLeidas.map((a) => ({ ...a, leida: true })),
@@ -78,20 +87,17 @@ const cargarAlertas = async (f = {}) => {
 
       let iconUrl;
       if (a.leida) {
-        // 🔵 Leídas: color celeste fuerte (sin icono de proceso)
         const svg = `
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
             <circle cx="20" cy="20" r="18" fill="deepskyblue" stroke="blue" stroke-width="2"/>
-          </svg>
-        `;
+          </svg>`;
         iconUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
       } else {
-        // 🔴 No leídas: icono del proceso o rojo
         iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
       }
 
       const marker = new gmaps.Marker({
-        position: { lat: a.gpsy, lng: a.gpsx }, // lat = gpsy, lng = gpsx
+        position: { lat: a.gpsy, lng: a.gpsx },
         map,
         title: a.nombre,
         icon: {
@@ -102,7 +108,6 @@ const cargarAlertas = async (f = {}) => {
 
       marker.addListener("mouseover", () => {
         abrirModal(a.alertaid);
-        console.log("👉 Hover alertaId:", a.alertaid);
       });
 
       markers.push(marker);
@@ -113,6 +118,7 @@ const cargarAlertas = async (f = {}) => {
     console.error("❌ Error cargando alertas:", err);
   }
 };
+
 
 // 👂 Handler que atiende el evento del bus para refrescar el mapa
 const handleRefresh = () => {

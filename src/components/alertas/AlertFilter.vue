@@ -288,40 +288,61 @@
     </div>
 
 
+    <!-- 🔹 Fechas (solo se muestran si no está activo el checkbox) -->
+    <div v-if="!filtros.alarmasActivas">
+      <div class="mb-3">
+        <label class="form-label">Fecha Inicio</label>
+        <input v-model="filtros.fechaInicio" type="date" class="form-control" />
+      </div>
 
-
-    <!-- Fechas -->
-    <div class="mb-3">
-      <label class="form-label">Fecha Inicio</label>
-      <input v-model="filtros.initDate" type="datetime-local" class="form-control" />
+      <div class="mb-3">
+        <label class="form-label">Fecha Fin</label>
+        <input v-model="filtros.fechaFin" type="date" class="form-control" />
+      </div>
     </div>
 
-    <div class="mb-3">
-      <label class="form-label">Fecha Fin</label>
-      <input v-model="filtros.endDate" type="datetime-local" class="form-control" />
-    </div>
+
 
     <div class="acciones">
       <button type="button" class="btn btn-secondary" @click="limpiar">Limpiar</button>
       <button type="submit" class="btn btn-primary">Buscar</button>
     </div>
+
+    <!-- 🔹 Acciones -->
+    <div class="acciones align-items-center">
+      <!-- Checkbox Alarmas Activas -->
+      <div class="form-check me-auto">
+        <input
+          v-model="filtros.alarmasActivas"
+          type="checkbox"
+          class="form-check-input"
+          id="alarmasActivas"
+        />
+        <label class="form-check-label" for="alarmasActivas">
+          Alertas Activas
+        </label>
+      </div>
+
+    </div>
+    
   </form>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from "vue";
+import { reactive, ref, onMounted, watch } from "vue";
 import axios from "axios";
+
 
 const mostrar = ref(true);  // ahora sí es reactivo
 
 const emit = defineEmits(["filtrar"]);
 
 const filtros = reactive({
-  proceso: "",
-  activo: "",
-  initDate: "",
-  endDate: "",
-});
+  alarmasActivas: false,
+  fechaInicio: "",
+  fechaFin: "",
+}); // 👈 todos los filtros dinámicos van acá
+
 
 const procesos = ref([]);
 const activos  = ref([]);
@@ -386,9 +407,6 @@ const loadData = async () =>
 }
 
 
-// Normaliza datetime-local a ISO 8601 (OffsetDateTime-friendly en backend)
-const toISO = (val) => (val ? new Date(val).toISOString() : "");
-
 // Helper para extraer mensaje de error del backend/axios
 const errMsg = (err, fallback) =>
   err?.response?.data?.message ||
@@ -398,21 +416,44 @@ const errMsg = (err, fallback) =>
   "Error desconocido";
 
 // Enviar filtros al padre (la vista) -> la vista los pasa a GoogleMap via :filtros
+// Convierte datetime-local a ISO8601
+const toISO = (val) => (val ? new Date(val).toISOString() : "");
+
+// Emite solo los filtros que tienen valor
 const emitirFiltros = () => {
-  emit("filtrar", {
-    proceso: filtros.proceso || "",
-    activo: filtros.activo || "",
-    initDate: toISO(filtros.initDate),
-    endDate: toISO(filtros.endDate),
+  const filtrosLlenos = {};
+
+  Object.entries(filtros).forEach(([key, value]) => {
+    if (value !== "" && value !== null && value !== undefined) {
+      filtrosLlenos[key] = typeof value === "string" && value.includes("T")
+        ? toISO(value)
+        : value;
+    }
   });
+
+  emit("filtrar", filtrosLlenos);
 };
 
-// Limpia el formulario y emite sin filtros
+// Limpia todos los campos visibles
 const limpiar = () => {
-  filtros.proceso = "";
-  filtros.activo = "";
-  filtros.initDate = "";
-  filtros.endDate = "";
+  //Object.keys(filtros).forEach(key => filtros[key] = "");
+
+
+    // Guarda las fechas antes de limpiar
+  const fechaInicioTemp = filtros.fechaInicio;
+  const fechaFinTemp = filtros.fechaFin;
+
+  // Limpia todos los campos excepto los que queremos mantener
+  Object.keys(filtros).forEach(key => {
+    if (key !== "fechaInicio" && key !== "fechaFin" && key !== "alarmasActivas") {
+      filtros[key] = "";
+    }
+  });
+
+  // Restaura los valores de fecha
+  filtros.fechaInicio = fechaInicioTemp;
+  filtros.fechaFin = fechaFinTemp;
+
   emitirFiltros();
 };
 
@@ -420,6 +461,24 @@ onMounted(async () => {
   loadData();
 
 });
+
+
+
+// 🔹 Reacciona cuando se activa/desactiva el checkbox "Alertas Activas"
+watch(
+  () => filtros.alarmasActivas,
+  (nuevoValor) => {
+    // Si se activa, limpiamos fechas para evitar conflicto
+    if (nuevoValor) {
+      filtros.fechaInicio = "";
+      filtros.fechaFin = "";
+    }
+
+    // Emitimos inmediatamente los filtros actualizados
+    emitirFiltros();
+  }
+);
+
 </script>
 
 <style scoped>
@@ -435,5 +494,11 @@ onMounted(async () => {
 }
 .btn {
   cursor: pointer;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>
