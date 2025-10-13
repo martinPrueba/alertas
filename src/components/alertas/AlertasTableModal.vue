@@ -5,11 +5,13 @@ import axios from "axios";
 
 const props = defineProps({
   mostrar: Boolean,
-  alertaId: {
-    type: Number,
-    default: null,
+  alertaId: Number,
+  modoVista: {
+    type: String,
+    default: "simple", // valores: "simple", "validar", "relaciones"
   },
 });
+
 
 const emit = defineEmits(["cerrar"]);
 
@@ -148,8 +150,11 @@ const marcarComoLeida = async () => {
       <h2>📋 Detalle de la Alerta ID: {{ alertaId }}</h2>
       <button class="btn-cerrar" @click="emit('cerrar')">❌ Cerrar</button>
 
-      <!-- Tabla principal -->
-      <div v-if="alerta" class="tabla-wrapper">
+      <!-- 🟩 SECCIÓN PRINCIPAL: información básica de la alerta -->
+      <div
+        v-if="alerta && modoVista === 'simple'"
+        class="tabla-wrapper"
+      >
         <table>
           <thead>
             <tr>
@@ -171,79 +176,103 @@ const marcarComoLeida = async () => {
           </tbody>
         </table>
       </div>
-      <p v-else>⏳ Cargando alerta...</p>
 
-      <!-- ✅ Mensaje combinado si no hay posteriores NI anteriores -->
-      <div v-if="!hayPosterior && !hayAnterior" class="relacionadas">
-        <p class="mensaje-vacio"><strong>No existen evententos posteriores ni anteriores.</strong></p>
-      </div>
+      <!-- 👇 si aún no se cargó nada -->
+      <p v-else-if="!alerta">⏳ Cargando alerta...</p>
 
-      <!-- 🔁 Si hay al menos una, mostramos secciones -->
-      <div v-else>
-        <!-- 🔽 Posteriores -->
-        <div class="relacionadas">
-          <h3>🔽 Alertas posteriores relacionadas</h3>
-          <div v-if="hayPosterior" class="tabla-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th v-for="col in colsPosterior" :key="'post-h-' + col">{{ col }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td v-for="col in colsPosterior" :key="'post-v-' + col">
-                    {{ posterior[col] == null ? '—' : posterior[col] }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-else class="mensaje-vacio">No hay alertas posteriores.</p>
+
+<!-- 🟡 SECCIÓN VALIDAR -->
+<div v-if="modoVista === 'validar' && alerta" class="marcar-leida">
+  
+  <!-- 🔹 Caso 1: alerta NO leída (sin fecha/tiempo de reconocimiento) -->
+  <template v-if="!alerta.fecha_reconocimiento && !alerta.tiempo_reconocimiento">
+    <h3>✅ Validar alerta</h3>
+    <label>
+      <input type="checkbox" v-model="valida" />
+      ¿Validada?
+    </label>
+
+    <textarea
+      v-model="comentario"
+      placeholder="Escribe un comentario..."
+    ></textarea>
+
+    <button class="btn-accion" @click="marcarComoLeida">
+      💾 Guardar validación
+    </button>
+  </template>
+
+  <!-- 🔹 Caso 2: alerta YA leída (con fecha/tiempo de reconocimiento) -->
+  <template v-else>
+    <h3>📘 Alerta ya validada</h3>
+    <p><strong>Fecha de reconocimiento:</strong> {{ alerta.fecha_reconocimiento }}</p>
+    <p><strong>Tiempo de reconocimiento:</strong> {{ alerta.tiempo_reconocimiento }}</p>
+    <p><strong>Comentario:</strong> {{ alerta.comentario || 'Sin comentario registrado' }}</p>
+  </template>
+
+</div>
+
+
+      <!-- 🔴 SECCIÓN RELACIONES: sólo si el modoVista es 'relaciones' -->
+      <div v-if="modoVista === 'relaciones'" class="relacionadas-container">
+        <!-- Si no hay relaciones -->
+        <div v-if="!hayPosterior && !hayAnterior" class="relacionadas">
+          <p class="mensaje-vacio">
+            <strong>No existen eventos posteriores ni anteriores.</strong>
+          </p>
         </div>
 
-        <!-- 🔼 Anteriores -->
-        <div class="relacionadas">
-          <h3>🔼 Alertas anteriores relacionadas</h3>
-          <div v-if="hayAnterior" class="tabla-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th v-for="col in colsAnterior" :key="'ant-h-' + col">{{ col }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td v-for="col in colsAnterior" :key="'ant-v-' + col">
-                    {{ anterior[col] == null ? '—' : anterior[col] }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- Si hay relaciones -->
+        <div v-else>
+          <!-- 🔼 Anteriores -->
+          <div class="relacionadas">
+            <h3>🔼 Alertas anteriores relacionadas</h3>
+            <div v-if="hayAnterior" class="tabla-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th v-for="col in colsAnterior" :key="'ant-h-' + col">{{ col }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td v-for="col in colsAnterior" :key="'ant-v-' + col">
+                      {{ anterior[col] == null ? "—" : anterior[col] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else class="mensaje-vacio">No hay alertas anteriores.</p>
           </div>
-          <p v-else class="mensaje-vacio">No hay alertas anteriores.</p>
+
+          <!-- 🔽 Posteriores -->
+          <div class="relacionadas">
+            <h3>🔽 Alertas posteriores relacionadas</h3>
+            <div v-if="hayPosterior" class="tabla-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th v-for="col in colsPosterior" :key="'post-h-' + col">{{ col }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td v-for="col in colsPosterior" :key="'post-v-' + col">
+                      {{ posterior[col] == null ? "—" : posterior[col] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else class="mensaje-vacio">No hay alertas posteriores.</p>
+          </div>
         </div>
-      </div>
-
-      <!-- SOLO si no está leída y no tiene fecha_reconocimiento -->
-      <div v-if="alerta && !esLeida && !alerta.fecha_reconocimiento" class="marcar-leida">
-        <label>
-          <input type="checkbox" v-model="valida" />
-          ¿Validada?
-        </label>
-
-        <textarea
-          v-model="comentario"
-          placeholder="Escribe un comentario..."
-        ></textarea>
-
-        <button class="btn-accion" @click="marcarComoLeida">
-          ✅ Marcar como leída
-        </button>
       </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .modal-backdrop {

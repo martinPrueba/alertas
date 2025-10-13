@@ -16,6 +16,7 @@ let map = null;
 let gmaps = null;
 let markers = [];
 
+const modoVista = ref("simple");
 const mostrarModal = ref(false);
 const alertaIdSeleccionada = ref(null);
 
@@ -40,14 +41,21 @@ const limpiarMarcadores = () => {
 
 const cargarAlertas = async (f = {}) => {
   try {
-    // 🔸 Quitamos filtros vacíos
+
     const filtrosLlenos = Object.fromEntries(
-      Object.entries(f || {}).filter(([, v]) => v !== "" && v != null)
+      Object.entries(f || {}).filter(([k, v]) => {
+        // 🔸 Ignorar valores vacíos o nulos
+        if (v === "" || v == null) return false;
+        // 🔸 Ignorar alarmasActivas:false (solo usar si es true)
+        if (k === "alarmasActivas" && v === false) return false;
+        return true;
+      })
     );
 
     const tieneFiltros = Object.keys(filtrosLlenos).length > 0;
 
     let data;
+
 
     // 🔹 Si viene "alarmasActivas: true" → llamamos a esa API directamente
     if (filtrosLlenos.alarmasActivas === true) {
@@ -85,33 +93,89 @@ const cargarAlertas = async (f = {}) => {
     for (const a of todas) {
       if (!a.gpsx || !a.gpsy) continue;
 
-      let iconUrl;
-      if (a.leida) {
-        const svg = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-            <circle cx="20" cy="20" r="18" fill="deepskyblue" stroke="blue" stroke-width="2"/>
-          </svg>`;
-        iconUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
-      } else {
-        iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-      }
+let iconUrl;
 
-      const marker = new gmaps.Marker({
-        position: { lat: a.gpsy, lng: a.gpsx },
-        map,
-        title: a.nombre,
-        icon: {
-          url: iconUrl,
-          scaledSize: new gmaps.Size(40, 40),
-        },
-      });
+if (a.leida) {
+  // 🟦 Icono circular celeste con borde azul
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+      <circle cx="20" cy="20" r="18" fill="deepskyblue" stroke="blue" stroke-width="2"/>
+    </svg>
+  `;
+  iconUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+} else {
+  // 🔴 Icono normal (rojo o el asignado por el proceso)
+  iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+}
 
-      marker.addListener("mouseover", () => {
-        abrirModal(a.alertaid);
-      });
+const marker = new gmaps.Marker({
+  position: { lat: a.gpsy, lng: a.gpsx },
+  map,
+  title: a.nombre,
+  icon: {
+    url: iconUrl,
+    scaledSize: new gmaps.Size(40, 40),
+  },
+});
+
+
+let hoverTimeout = null;
+let clickTimeout = null; // 👈 para diferenciar click simple de doble
+let clickTriggered = false;
+let dblclickTriggered = false;
+
+//  Hover: solo información simple si no hay click ni doble click
+marker.addListener("mouseover", () => {
+  clickTriggered = false;
+  dblclickTriggered = false;
+
+  hoverTimeout = setTimeout(() => {
+    if (!clickTriggered && !dblclickTriggered) {
+      modoVista.value = "simple";
+      abrirModal(a.alertaid);
+    }
+  }, 600);
+});
+
+marker.addListener("mouseout", () => {
+  clearTimeout(hoverTimeout);
+});
+
+//  Click: se ejecuta con delay para saber si viene un doble click
+marker.addListener("click", (event) => {
+  clearTimeout(hoverTimeout);
+  clickTriggered = true;
+
+  // Esperamos un poco por si el usuario hace doble click
+  clickTimeout = setTimeout(() => {
+    if (!dblclickTriggered) {
+      modoVista.value = "validar";
+      abrirModal(a.alertaid);
+    }
+  }, 300); // <-- si en 300ms no hubo segundo click, se asume click simple
+
+  event.domEvent?.stopPropagation();
+  event.domEvent?.preventDefault();
+});
+
+//  Doble click: cancela el click simple y ejecuta relaciones
+marker.addListener("dblclick", (event) => {
+  clearTimeout(hoverTimeout);
+  clearTimeout(clickTimeout); // 👈 cancela el click simple pendiente
+  dblclickTriggered = true;
+
+  modoVista.value = "relaciones";
+  abrirModal(a.alertaid);
+
+  event.domEvent?.stopPropagation();
+  event.domEvent?.preventDefault();
+});
+
+
 
       markers.push(marker);
     }
+
   } catch (err) {
     const msg = errMsg(err, "Error cargando alertas");
     alert(`❌ ${msg}`);
@@ -180,11 +244,14 @@ defineExpose({
 <template>
   <div class="map-container" ref="mapRef"></div>
 
-  <AlertasTableModal
-    :mostrar="mostrarModal"
-    :alertaId="alertaIdSeleccionada"
-    @cerrar="mostrarModal = false"
-  />
+<AlertasTableModal
+  :mostrar="mostrarModal"
+  :alertaId="alertaIdSeleccionada"
+  :modoVista="modoVista"
+  @cerrar="mostrarModal = false"
+/>
+ 
+
 </template>
 
 <style scoped>
