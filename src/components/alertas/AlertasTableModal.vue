@@ -1,6 +1,8 @@
 <!-- src/components/alertas/AlertasTableModal.vue -->
 <script setup>
 import { ref, watch, computed } from "vue";
+import { onMounted } from 'vue'
+
 import axios from "axios";
 
 const props = defineProps({
@@ -126,11 +128,14 @@ const cargarRelacionadas = async (id) => {
 // Marcar como leída
 const marcarComoLeida = async () => {
   try {
-    const payload = {
-      idAlerta: props.alertaId,
-      valida: valida.value,
-      comentario: comentario.value,
-    };
+  const payload = {
+    idAlerta: props.alertaId,
+    valida: valida.value,
+    comentario: comentario.value,
+    codigo1: codigoSeleccionado.value,
+    codigo2: codigo2Seleccionado.value,
+  };
+
 
     await axios.post("http://localhost:8080/api/alertas/marcar-leida", payload);
 
@@ -142,6 +147,55 @@ const marcarComoLeida = async () => {
     alert("❌ No se pudo marcar como leída");
   }
 };
+
+
+
+
+
+const alertas = ref([])
+const codigoSeleccionado = ref('')
+const loading = ref(true)
+const error = ref(null)
+
+const alertasCodigo2 = ref([])
+const codigo2Seleccionado = ref('')
+const loadingCodigo2 = ref(true)
+const errorCodigo2 = ref(null)
+
+
+onMounted(async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/alertas-codigo1/list')
+    if (!response.ok) throw new Error('Error al obtener los datos del servidor')
+    alertas.value = await response.json()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+
+try {
+  const response2 = await fetch('http://localhost:8080/api/alertas-codigo2/list')
+  if (!response2.ok) throw new Error('Error al obtener los códigos del servidor')
+  alertasCodigo2.value = await response2.json()
+} catch (err) {
+  errorCodigo2.value = err.message
+} finally {
+  loadingCodigo2.value = false
+}
+
+
+})
+
+function emitirSeleccion() {
+  console.log("Código 1 seleccionado:", codigoSeleccionado.value)
+}
+
+function emitirSeleccionCodigo2() {
+  console.log("Código 2 seleccionado:", codigo2Seleccionado.value)
+}
+
+
 </script>
 
 <template>
@@ -196,6 +250,65 @@ const marcarComoLeida = async () => {
       v-model="comentario"
       placeholder="Escribe un comentario..."
     ></textarea>
+
+      <div class="select-alertas-codigo1">
+    <label for="codigo1">Seleccione Código 1:</label>
+    <select
+      id="codigo1"
+      v-model="codigoSeleccionado"
+      @change="emitirSeleccion"
+      class="form-select"
+    >
+      <option disabled value="">-- Seleccione una opción --</option>
+      <option
+        v-for="alerta in alertas"
+        :key="alerta.id"
+        :value="alerta.codigo"
+      >
+        {{ alerta.codigo }} - {{ alerta.descripcion }}
+      </option>
+    </select>
+
+    <p v-if="codigoSeleccionado" class="seleccion">
+      Código seleccionado: <strong>{{ codigoSeleccionado }}</strong>
+    </p>
+
+    <p v-if="loading" class="loading">Cargando códigos...</p>
+    <p v-if="error" class="error">{{ error }}</p>
+  </div>
+
+
+
+
+
+
+  <div class="select-alertas-codigo2">
+    <label for="codigo2">Seleccione Código 2:</label>
+    <select
+      id="codigo2"
+      v-model="codigo2Seleccionado"
+      @change="emitirSeleccionCodigo2"
+      class="form-select"
+    >
+      <option disabled value="">-- Seleccione una opción --</option>
+      <option
+        v-for="codigo2 in alertasCodigo2"
+        :key="codigo2.id"
+        :value="codigo2.codigo"
+      >
+        {{ codigo2.codigo }} - {{ codigo2.descripcion }}
+      </option>
+    </select>
+
+    <p v-if="codigo2Seleccionado" class="seleccion">
+      Código seleccionado: <strong>{{ codigo2Seleccionado }}</strong>
+    </p>
+
+    <p v-if="loadingCodigo2" class="loading">Cargando códigos...</p>
+    <p v-if="errorCodigo2" class="error">{{ errorCodigo2 }}</p>
+  </div>
+
+
 
     <button class="btn-accion" @click="marcarComoLeida">
       💾 Guardar validación
