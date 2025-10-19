@@ -60,10 +60,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="!Object.keys(data.alertasPorServicio).length">
+            <tr v-if="!Object.keys(data.alertasPorTipoServicio).length">
               <td colspan="2">Sin datos</td>
             </tr>
-            <tr v-for="(cantidad, servicio) in data.alertasPorServicio" :key="servicio">
+            <tr v-for="(cantidad, servicio) in data.alertasPorTipoServicio" :key="servicio">
               <td>{{ servicio }}</td>
               <td>{{ cantidad }}</td>
             </tr>
@@ -96,25 +96,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import axios from "axios";
+import { alertasData } from "@/stores/alertasData"; // 👈 import global
 
 const data = ref({
   alertasPorProceso: {},
   alertasPorCriticidad: {},
-  alertasPorServicio: {},
+  alertasPorTipoServicio: {},
   cantidadActivas: 0
 });
 
-onMounted(async () => {
+// 🔹 Función para cargar el reporte dinámico
+const cargarReporte = async () => {
   try {
-    const response = await axios.get("http://localhost:8080/api/alertas/reporte-alertas");
+    const response = await axios.post(
+      "http://localhost:8080/api/alertas/reporte-alertas-dynamic",
+      {
+        alertas: alertasData.alertas,
+        alertasLeidas: alertasData.alertasLeidas
+      }
+    );
     data.value = response.data;
   } catch (error) {
-    console.error("Error cargando reporte:", error);
+    console.error("❌ Error cargando reporte:", error);
   }
-});
+};
+
+// 🔹 Cargar al montar la vista
+onMounted(cargarReporte);
+
+// 🔹 Volver a cargar cuando cambien las alertas globales
+watch(
+  () => [alertasData.alertas, alertasData.alertasLeidas],
+  () => {
+    cargarReporte();
+  },
+  { deep: true } // 👈 observa los cambios internos del array
+);
 </script>
+
 
 <style scoped>
 .reporte-container {

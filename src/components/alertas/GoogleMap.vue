@@ -5,6 +5,10 @@ import axios from "axios";
 import { loadGoogleMaps } from "@/utils/loadGoogleMaps";
 import AlertasTableModal from "./AlertasTableModal.vue";
 import emitter from "@/utils/emitter"; // 👈 añadido
+import { alertasData } from "@/stores/alertasData"; // 👈 import global
+
+
+
 
 const props = defineProps({
   // ⬅️ Recibimos filtros desde la vista
@@ -59,9 +63,12 @@ const cargarAlertas = async (f = {}) => {
 
     // 🔹 Si viene "alarmasActivas: true" → llamamos a esa API directamente
     if (filtrosLlenos.alarmasActivas === true) {
-      console.log("🔹 Solicitando solo alarmas activas...");
       const response = await axios.get("http://localhost:8080/api/alertas/get-alertas-activas");
       data = response.data;
+
+      alertasData.alertas = data[0]?.alertas || [];
+      alertasData.alertasLeidas = data[0]?.alertasLeidas || [];
+      
     } 
     else if (tieneFiltros) {
       // 👇 Si hay otros filtros → usamos el endpoint dinámico
@@ -70,6 +77,10 @@ const cargarAlertas = async (f = {}) => {
         filtrosLlenos
       );
       data = response.data;
+
+      alertasData.alertas = data.alertas || [];
+      alertasData.alertasLeidas = data.alertasLeidas || [];
+
     } 
     else {
       // 👇 Si no hay filtros, traemos todas las alertas
@@ -77,6 +88,13 @@ const cargarAlertas = async (f = {}) => {
         "http://localhost:8080/api/alertas/get-all-alerts"
       );
       data = response.data;
+      // Si el backend devuelve un array, tomamos el primer elemento
+      const wrapper = Array.isArray(data) ? data[0] : data;
+
+      alertasData.alertas = wrapper.alertas || [];
+      alertasData.alertasLeidas = wrapper.alertasLeidas || [];
+
+
     }
 
     limpiarMarcadores();
@@ -117,7 +135,7 @@ const marker = new gmaps.Marker({
     scaledSize: new gmaps.Size(40, 40),
   },
 });
-
+  
 
 let hoverTimeout = null;
 let clickTimeout = null; // 👈 para diferenciar click simple de doble
@@ -187,7 +205,7 @@ marker.addListener("dblclick", (event) => {
 // 👂 Handler que atiende el evento del bus para refrescar el mapa
 const handleRefresh = () => {
   if (!gmaps || !map) return;
-  console.log("[GoogleMap] REFRESH_MAP recibido → recargando alertas…");
+  //console.log("[GoogleMap] REFRESH_MAP recibido → recargando alertas…");
   cargarAlertas(props.filtros || {});
 };
 
@@ -209,13 +227,23 @@ onMounted(async () => {
     const maps = await loadGoogleMaps(apiKey);
     gmaps = maps;
 
-    map = new gmaps.Map(mapRef.value, {
-      center: { lat: -33.4489, lng: -70.6693 }, // Santiago
-      zoom: 6,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-    });
+map = new gmaps.Map(mapRef.value, {
+  center: { lat: -33.4489, lng: -70.6693 }, // Santiago
+  zoom: 6,
+
+  // 👇 Cambiá esta parte:
+  mapTypeId: "roadmap", // "roadmap" = normal, "satellite" = satélite, "hybrid" = satélite + etiquetas
+  mapTypeControl: true, // 👈 muestra el botón para elegir tipo de mapa
+  mapTypeControlOptions: {
+    style: gmaps.MapTypeControlStyle.HORIZONTAL_BAR,
+    position: gmaps.ControlPosition.TOP_RIGHT,
+    mapTypeIds: ["roadmap", "satellite", "hybrid", "terrain"], // 👈 opciones disponibles
+  },
+
+  streetViewControl: false,
+  fullscreenControl: false,
+});
+
 
     // Primera carga: sin filtros (o con los que vengan ya seteados)
     await cargarAlertas(props.filtros || {});

@@ -1085,6 +1085,7 @@ const loadData = async () =>
     if (p1.status === "fulfilled") 
     {
       procesos.value = p1.value?.data || [];
+      
     } 
     else 
     {
@@ -1110,9 +1111,9 @@ const loadData = async () =>
     if (p3.status === "fulfilled") 
     {
       const dataTipos = p3.value?.data || {};
+      console.log("ESTOS SON LOS TIPOS :",dataTipos)
       // Mezcla todo lo que venga (procesos, nombreActivo, severidad, etc.)
       Object.assign(tipos, dataTipos);
-      console.log("📊 Tipos cargados:", tipos);
     } 
     else 
     {
@@ -1132,7 +1133,6 @@ const loadData = async () =>
       visible: value
     }));
 
-    console.log("📌 Campos visibles normalizados:", visibleFields.value);
   } catch (error) {
     console.error("Error cargando configuración de campos:", error);
   }
@@ -1150,22 +1150,45 @@ const errMsg = (err, fallback) =>
 
 // Enviar filtros al padre (la vista) -> la vista los pasa a GoogleMap via :filtros
 // Convierte datetime-local a ISO8601
-const toISO = (val) => (val ? new Date(val).toISOString() : "");
+// Helper que mantiene el formato que esperas
+const toISO = (val) => {
+  if (!val) return "";
+  const d = new Date(val);
+  // si viene tipo "2025-10-15" (solo fecha), devolvemos sin hora
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+    return val; // 👈 mantiene formato YYYY-MM-DD
+  }
+  // si viene datetime-local, convertimos a ISO completo
+  return isNaN(d.getTime()) ? "" : d.toISOString();
+};
 
 // Emite solo los filtros que tienen valor
 const emitirFiltros = () => {
   const filtrosLlenos = {};
 
+  const camposFecha = [
+    "inicioevento",
+    "fechaestado",
+    "fechaReconocimiento",
+    "fechaInicio",
+    "fechaFin",
+  ];
+
   Object.entries(filtros).forEach(([key, value]) => {
-    if (value !== "" && value !== null && value !== undefined) {
-      filtrosLlenos[key] = typeof value === "string" && value.includes("T")
-        ? toISO(value)
-        : value;
+    if (value === "" || value === null || value === undefined) return;
+
+    if (camposFecha.includes(key)) {
+      // aplica el formato correcto (mantiene YYYY-MM-DD)
+      filtrosLlenos[key] = toISO(value);
+    } else {
+      filtrosLlenos[key] = value;
     }
   });
 
+  console.log("📤 Filtros enviados:", filtrosLlenos);
   emit("filtrar", filtrosLlenos);
 };
+
 
 // Limpia todos los campos visibles
 const limpiar = () => {
@@ -1188,6 +1211,7 @@ const limpiar = () => {
   filtros.fechaFin = fechaFinTemp;
 
   emitirFiltros();
+
 };
 
 onMounted(async () => {
