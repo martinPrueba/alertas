@@ -143,17 +143,17 @@ let clickTriggered = false;
 let dblclickTriggered = false;
 
 //  Hover: solo información simple si no hay click ni doble click
-marker.addListener("mouseover", () => {
-  clickTriggered = false;
-  dblclickTriggered = false;
-
-  hoverTimeout = setTimeout(() => {
-    if (!clickTriggered && !dblclickTriggered) {
-      modoVista.value = "simple";
-      abrirModal(a.alertaid);
-    }
-  }, 600);
-});
+//marker.addListener("mouseover", () => {
+//  clickTriggered = false;
+//  dblclickTriggered = false;
+//
+//  hoverTimeout = setTimeout(() => {
+//    if (!clickTriggered && !dblclickTriggered) {
+//      modoVista.value = "simple";
+//      abrirModal(a.alertaid);
+//    }
+//  }, 600);
+//});
 
 marker.addListener("mouseout", () => {
   clearTimeout(hoverTimeout);

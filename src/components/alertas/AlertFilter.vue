@@ -10,7 +10,6 @@
         <div class="mb-3" v-if="isVisible('codalerta')">
           <label class="form-label">Código Alerta</label>
           <select v-model="filtros.codalerta" class="form-select">
-            <option value="">Seleccionar</option>
             <option
               v-for="codigo in (tipos.codalerta || [])"
               :key="codigo"
@@ -31,7 +30,6 @@
             v-model="filtros.nombre"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.nombre"
               :key="opt"
@@ -60,7 +58,6 @@
             v-model="filtros.sentenciaId"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.sentenciaId"
               :key="opt"
@@ -96,7 +93,6 @@
               v-model="filtros.identificacionalerta"
               class="form-select"
             >
-              <option value="">Seleccionar</option>
               <option
                 v-for="opt in tipos.identificacionalerta"
                 :key="opt"
@@ -117,10 +113,9 @@
 
 
         <!-- Activo -->
-        <div class="mb-3" v-if="isVisible('activo')">
+        <div class="mb-3" v-if="isVisible('nombreActivo')">
           <label class="form-label">Nombre Activo</label>
-          <select v-model="filtros.activo" class="form-select">
-            <option value="">Seleccionar</option>
+          <select v-model="filtros.nombreActivo" class="form-select">
             <option v-for="activo in activos" :key="activo" :value="activo">
               {{ activo }}
             </option>
@@ -131,7 +126,6 @@
         <div class="mb-3" v-if="isVisible('proceso')">
           <label class="form-label">Proceso</label>
           <select v-model="filtros.proceso" class="form-select">
-            <option value="">Seleccionar</option>
             <option v-for="proceso in procesos" :key="proceso" :value="proceso">
               {{ proceso }}
             </option>
@@ -147,7 +141,6 @@
             v-model="filtros.latencia"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.latencia"
               :key="opt"
@@ -176,7 +169,6 @@
             v-model="filtros.tipoServicio"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.tipoServicio"
               :key="opt"
@@ -232,7 +224,6 @@
             v-model="filtros.Subtiposervicio"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.Subtiposervicio"
               :key="opt"
@@ -260,7 +251,6 @@
             v-model="filtros.jitter"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.jitter"
               :key="opt"
@@ -289,7 +279,6 @@
             v-model="filtros.disponibilidad"
             class="form-select"
           >
-            <option value="">Seleccionar</option>
             <option
               v-for="opt in tipos.disponibilidad"
               :key="opt"
@@ -319,7 +308,6 @@
     v-model="filtros.packetlost"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.packetlost" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -342,7 +330,6 @@
     v-model="filtros.rssi"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.rssi" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -365,7 +352,6 @@
     v-model="filtros.nsr"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.nsr" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -388,7 +374,6 @@
     v-model="filtros.PLM"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.PLM" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -410,7 +395,6 @@
     v-model="filtros.tipoExWa"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.tipoExWa" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -432,7 +416,6 @@
     v-model="filtros.codigoEvento"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.codigoEvento" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -454,7 +437,6 @@
     v-model="filtros.descripcionevento"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.descripcionevento"
       :key="opt"
@@ -481,7 +463,6 @@
     v-model="filtros.Origen"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.Origen" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -503,7 +484,6 @@
     v-model="filtros.tipodocumento"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.tipodocumento"
       :key="opt"
@@ -531,7 +511,6 @@
     v-model="filtros.estado"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.estado" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -553,7 +532,6 @@
     v-model="filtros.resumen"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.resumen" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -574,7 +552,6 @@
     v-model="filtros.titulo"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.titulo" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -596,7 +573,6 @@
     v-model="filtros.numero"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.numero" :key="opt" :value="opt">{{ opt }}</option>
   </select>
 
@@ -625,7 +601,6 @@
     v-model="filtros.razonestado"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.razonestado" :key="opt" :value="opt">
       {{ opt }}
     </option>
@@ -649,7 +624,6 @@
     v-model="filtros.gpsx"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.gpsx" :key="opt" :value="opt">
       {{ opt }}
     </option>
@@ -674,7 +648,6 @@
     v-model="filtros.gpsy"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.gpsy" :key="opt" :value="opt">
       {{ opt }}
     </option>
@@ -699,7 +672,6 @@
     v-model="filtros.gpsz"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.gpsz" :key="opt" :value="opt">
       {{ opt }}
     </option>
@@ -724,7 +696,6 @@
     v-model="filtros.gpsh"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.gpsh" :key="opt" :value="opt">
       {{ opt }}
     </option>
@@ -749,7 +720,6 @@
     v-model="filtros.radio"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option v-for="opt in tipos.radio" :key="opt" :value="opt">
       {{ opt }}
     </option>
@@ -774,7 +744,6 @@
     v-model="filtros.severidad"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.severidad"
       :key="opt"
@@ -789,7 +758,6 @@
     v-model="filtros.severidad"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option value="Baja">Baja</option>
     <option value="Media">Media</option>
     <option value="Alta">Alta</option>
@@ -807,7 +775,6 @@
     v-model="filtros.userid"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.userid"
       :key="opt"
@@ -835,7 +802,6 @@
     v-model="filtros.comentario"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.comentario"
       :key="opt"
@@ -878,7 +844,6 @@
     v-model="filtros.OT"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.OT"
       :key="opt"
@@ -906,7 +871,6 @@
     v-model="filtros.ticket"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.ticket"
       :key="opt"
@@ -947,7 +911,6 @@
     v-model="filtros.prediccion"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.prediccion"
       :key="opt"
@@ -975,7 +938,6 @@
     v-model="filtros.tiempoReconocimiento"
     class="form-select"
   >
-    <option value="">Seleccionar</option>
     <option
       v-for="opt in tipos.tiempoReconocimiento"
       :key="opt"

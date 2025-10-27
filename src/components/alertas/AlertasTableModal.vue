@@ -34,9 +34,12 @@ const colsAnterior = ref([]);
 // Utilidad: ¿hay columnas?
 const hasCols = (cols) => Array.isArray(cols) && cols.length > 0;
 
-// Computadas para saber si hay datos en posteriores/anteriores
-const hayPosterior = computed(() => posterior.value && hasCols(colsPosterior.value));
-const hayAnterior  = computed(() => anterior.value  && hasCols(colsAnterior.value));
+const hayPosterior = computed(() => Array.isArray(posterior.value) && posterior.value.length > 0);
+const hayAnterior  = computed(() => Array.isArray(anterior.value) && anterior.value.length > 0);
+
+
+
+
 
 // Cuando el modal se abre, cargamos datos
 watch(
@@ -78,28 +81,26 @@ const cargarAlerta = async (id) => {
 
 const cargarRelacionadas = async (id) => {
   // limpia antes de cargar
-  posterior.value = null;
+  posterior.value = [];
   colsPosterior.value = [];
-  anterior.value = null;
+  anterior.value = [];
   colsAnterior.value = [];
 
   // --- Posteriores ---
   try {
     const respPost = await axios.get(`http://localhost:8080/api/alertas-posteriores/${id}`);
     const dataPost = respPost?.data;
-    if (dataPost && Object.keys(dataPost).length > 0) {
+    if (Array.isArray(dataPost) && dataPost.length > 0) {
       posterior.value = dataPost;
-      colsPosterior.value = Object.keys(dataPost);
+      colsPosterior.value = Object.keys(dataPost[0]); // columnas del primer elemento
     } else {
-      posterior.value = null;
+      posterior.value = [];
       colsPosterior.value = [];
     }
-    console.log("🔽 Posterior:", dataPost); // evita [object Object]
+    console.log("🔽 Posteriores:", dataPost);
   } catch (e) {
     console.error("⚠️ Error en posteriores:", e);
-    const msg = e?.response?.data?.message || e?.response?.data?.error || e.message;
-    if (msg) //alert(`Posteriores: ${msg}`);
-    posterior.value = null;
+    posterior.value = [];
     colsPosterior.value = [];
   }
 
@@ -107,22 +108,21 @@ const cargarRelacionadas = async (id) => {
   try {
     const respPrev = await axios.get(`http://localhost:8080/api/alertas-previos/${id}`);
     const dataPrev = respPrev?.data;
-    if (dataPrev && Object.keys(dataPrev).length > 0) {
+    if (Array.isArray(dataPrev) && dataPrev.length > 0) {
       anterior.value = dataPrev;
-      colsAnterior.value = Object.keys(dataPrev);
+      colsAnterior.value = Object.keys(dataPrev[0]);
     } else {
-      anterior.value = null;
+      anterior.value = [];
       colsAnterior.value = [];
     }
-    console.log("🔼 Anterior:", dataPrev);
+    console.log("🔼 Anteriores:", dataPrev);
   } catch (e) {
     console.error("⚠️ Error en anteriores:", e);
-    const msg = e?.response?.data?.message || e?.response?.data?.error || e.message;
-    if (msg) //alert(`Anteriores: ${msg}`);
-    anterior.value = null;
+    anterior.value = [];
     colsAnterior.value = [];
   }
 };
+
 
 
 // Marcar como leída
@@ -136,6 +136,7 @@ const marcarComoLeida = async () => {
     codigo2: codigo2Seleccionado.value,
   };
 
+console.log("📦 Enviando payload a marcar-leida:", JSON.stringify(payload, null, 2));
 
     await axios.post("http://localhost:8080/api/alertas/marcar-leida", payload);
 
@@ -205,9 +206,9 @@ function emitirSeleccionCodigo2() {
       <button class="btn-cerrar" @click="emit('cerrar')">❌ Cerrar</button>
 
       <!-- 🟩 SECCIÓN PRINCIPAL: información básica de la alerta -->
-      <div
-        v-if="alerta && modoVista === 'simple'"
-        class="tabla-wrapper"
+      <div 
+  v-if="alerta && modoVista !== 'relaciones'"
+  class="tabla-wrapper"
       >
         <table>
           <thead>
@@ -237,9 +238,39 @@ function emitirSeleccionCodigo2() {
 
 <!-- 🟡 SECCIÓN VALIDAR -->
 <div v-if="modoVista === 'validar' && alerta" class="marcar-leida">
+
+        <!-- 🟩 SECCIÓN PRINCIPAL: información básica de la alerta -->
+      <div
+        v-if="alerta && modoVista === 'simple'"
+        class="tabla-wrapper"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th v-for="col in columnas" :key="col">{{ col }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td v-for="col in columnas" :key="col">
+                <img
+                  v-if="col === 'IconAssocieteFromProceso'"
+                  :src="alerta[col]"
+                  alt="icono"
+                  style="width: 40px; height: 40px;"
+                />
+                <span v-else>{{ alerta[col] }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 👇 si aún no se cargó nada -->
+      <p v-else-if="!alerta">⏳ Cargando alerta...</p>
   
   <!-- 🔹 Caso 1: alerta NO leída (sin fecha/tiempo de reconocimiento) -->
-  <template v-if="!alerta.fecha_reconocimiento && !alerta.tiempo_reconocimiento">
+  <template v-if="!alerta.valida">
     <h3>✅ Validar alerta</h3>
     <label>
       <input type="checkbox" v-model="valida" />
@@ -253,28 +284,29 @@ function emitirSeleccionCodigo2() {
 
       <div class="select-alertas-codigo1">
     <label for="codigo1">Seleccione Código 1:</label>
-    <select
-      id="codigo1"
-      v-model="codigoSeleccionado"
-      @change="emitirSeleccion"
-      class="form-select"
+  <select
+    id="codigo1"
+    v-model="codigoSeleccionado"
+    @change="emitirSeleccion"
+    class="form-select"
+  >
+    <option disabled value="">-- Seleccione una opción --</option>
+    <option
+      v-for="item in alertas"
+      :key="item.id"
+      :value="item.codcodigo1"
     >
-      <option disabled value="">-- Seleccione una opción --</option>
-      <option
-        v-for="alerta in alertas"
-        :key="alerta.id"
-        :value="alerta.codigo"
-      >
-        {{ alerta.codigo }} - {{ alerta.descripcion }}
-      </option>
-    </select>
+      {{ item.codcodigo1 }} - {{ item.descripcion }}
+    </option>
+  </select>
 
-    <p v-if="codigoSeleccionado" class="seleccion">
-      Código seleccionado: <strong>{{ codigoSeleccionado }}</strong>
-    </p>
+  <p v-if="codigoSeleccionado" class="seleccion">
+    Código seleccionado: <strong>{{ codigoSeleccionado }}</strong>
+  </p>
 
-    <p v-if="loading" class="loading">Cargando códigos...</p>
-    <p v-if="error" class="error">{{ error }}</p>
+  <p v-if="loading" class="loading">Cargando códigos...</p>
+  <p v-if="error" class="error">{{ error }}</p>
+
   </div>
 
 
@@ -292,11 +324,11 @@ function emitirSeleccionCodigo2() {
     >
       <option disabled value="">-- Seleccione una opción --</option>
       <option
-        v-for="codigo2 in alertasCodigo2"
-        :key="codigo2.id"
-        :value="codigo2.codigo"
+        v-for="item in alertasCodigo2"
+        :key="item.id"
+        :value="item.codcodigo2"
       >
-        {{ codigo2.codigo }} - {{ codigo2.descripcion }}
+        {{ item.codcodigo2 }} - {{ item.descripcion }}
       </option>
     </select>
 
@@ -306,6 +338,7 @@ function emitirSeleccionCodigo2() {
 
     <p v-if="loadingCodigo2" class="loading">Cargando códigos...</p>
     <p v-if="errorCodigo2" class="error">{{ errorCodigo2 }}</p>
+
   </div>
 
 
@@ -326,62 +359,64 @@ function emitirSeleccionCodigo2() {
 </div>
 
 
-      <!-- 🔴 SECCIÓN RELACIONES: sólo si el modoVista es 'relaciones' -->
-      <div v-if="modoVista === 'relaciones'" class="relacionadas-container">
-        <!-- Si no hay relaciones -->
-        <div v-if="!hayPosterior && !hayAnterior" class="relacionadas">
-          <p class="mensaje-vacio">
-            <strong>No existen eventos posteriores ni anteriores.</strong>
-          </p>
-        </div>
+<!-- 🔴 SECCIÓN RELACIONES -->
+<div v-if="modoVista === 'relaciones'" class="relacionadas-container">
 
-        <!-- Si hay relaciones -->
-        <div v-else>
-          <!-- 🔼 Anteriores -->
-          <div class="relacionadas">
-            <h3>🔼 Alertas anteriores relacionadas</h3>
-            <div v-if="hayAnterior" class="tabla-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th v-for="col in colsAnterior" :key="'ant-h-' + col">{{ col }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td v-for="col in colsAnterior" :key="'ant-v-' + col">
-                      {{ anterior[col] == null ? "—" : anterior[col] }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p v-else class="mensaje-vacio">No hay alertas anteriores.</p>
-          </div>
+  <!-- Si no hay relaciones -->
+  <div v-if="!hayPosterior && !hayAnterior" class="relacionadas">
+    <p class="mensaje-vacio"><strong>No existen eventos posteriores ni anteriores.</strong></p>
+  </div>
 
-          <!-- 🔽 Posteriores -->
-          <div class="relacionadas">
-            <h3>🔽 Alertas posteriores relacionadas</h3>
-            <div v-if="hayPosterior" class="tabla-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th v-for="col in colsPosterior" :key="'post-h-' + col">{{ col }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td v-for="col in colsPosterior" :key="'post-v-' + col">
-                      {{ posterior[col] == null ? "—" : posterior[col] }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p v-else class="mensaje-vacio">No hay alertas posteriores.</p>
-          </div>
-        </div>
+  <!-- Si hay relaciones -->
+  <div v-else>
+
+    <!-- 🔼 Anteriores -->
+    <div class="relacionadas">
+      <h3>🔼 Alertas anteriores relacionadas</h3>
+      <div v-if="hayAnterior" class="tabla-wrapper scroll-list">
+        <table>
+          <thead>
+            <tr>
+              <th v-for="col in colsAnterior" :key="'ant-h-' + col">{{ col }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(alerta, index) in anterior" :key="'ant-row-' + index">
+              <td v-for="col in colsAnterior" :key="'ant-v-' + col">
+                {{ alerta[col] == null ? "—" : alerta[col] }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+      <p v-else class="mensaje-vacio">No hay alertas anteriores.</p>
+    </div>
+
+    <!-- 🔽 Posteriores -->
+    <div class="relacionadas">
+      <h3>🔽 Alertas posteriores relacionadas</h3>
+      <div v-if="hayPosterior" class="tabla-wrapper scroll-list">
+        <table>
+          <thead>
+            <tr>
+              <th v-for="col in colsPosterior" :key="'post-h-' + col">{{ col }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(alerta, index) in posterior" :key="'post-row-' + index">
+              <td v-for="col in colsPosterior" :key="'post-v-' + col">
+                {{ alerta[col] == null ? "—" : alerta[col] }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="mensaje-vacio">No hay alertas posteriores.</p>
+    </div>
+
+  </div>
+</div>
+
     </div>
   </div>
 </template>
