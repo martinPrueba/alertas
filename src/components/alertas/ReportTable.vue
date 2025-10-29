@@ -131,6 +131,8 @@ const cargarInicial = async () => {
       "http://localhost:8080/api/alertas/reporte-alertas"
     );
     data.value = response.data;
+        console.log("Datos iniciales:", response.data);
+
   } catch (error) {
     console.error("❌ Error cargando alertas iniciales:", error);
   }
@@ -141,14 +143,20 @@ onMounted(async () => {
   await cargarInicial(); // 👈 primero carga todas las alertas
 });
 
-// 🔹 Volver a cargar cuando cambien las alertas globales
+let primeraCarga = true;
+
 watch(
   () => [alertasData.alertas, alertasData.alertasLeidas],
   () => {
+    if (primeraCarga) {
+      primeraCarga = false;
+      return; // 👈 no ejecuta en la primera carga
+    }
     cargarReporte();
   },
-  { deep: true } // 👈 observa los cambios internos del array
+  { deep: true }
 );
+
 </script>
 
 

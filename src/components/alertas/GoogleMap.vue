@@ -123,8 +123,15 @@ if (a.leida) {
   `;
   iconUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
 } else {
-  // 🔴 Icono normal (rojo o el asignado por el proceso)
-  iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+
+    // Nota la prioridad al nombre correcto en JSON (lower camelCase)
+  iconUrl =
+    a.iconAssocieteFromProceso ||
+    a.IconAssocieteFromProceso || // fallback por si algún endpoint antiguo lo manda así
+    "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+
+  //// 🔴 Icono normal (rojo o el asignado por el proceso)
+  //iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
 }
 
 const marker = new gmaps.Marker({
@@ -143,18 +150,6 @@ let clickTimeout = null; // 👈 para diferenciar click simple de doble
 let clickTriggered = false;
 let dblclickTriggered = false;
 
-//  Hover: solo información simple si no hay click ni doble click
-//marker.addListener("mouseover", () => {
-//  clickTriggered = false;
-//  dblclickTriggered = false;
-//
-//  hoverTimeout = setTimeout(() => {
-//    if (!clickTriggered && !dblclickTriggered) {
-//      modoVista.value = "simple";
-//      abrirModal(a.alertaid);
-//    }
-//  }, 600);
-//});
 
 marker.addListener("mouseout", () => {
   clearTimeout(hoverTimeout);
