@@ -123,8 +123,23 @@ const cargarReporte = async () => {
   }
 };
 
-// 🔹 Cargar al montar la vista
-onMounted(cargarReporte);
+
+// Cargar datos iniciales (todas las alertas)
+const cargarInicial = async () => {
+  try {
+    const response = await axios.get(
+      "http://localhost:8080/api/alertas/reporte-alertas"
+    );
+    data.value = response.data;
+  } catch (error) {
+    console.error("❌ Error cargando alertas iniciales:", error);
+  }
+};
+
+// 🔹 Llamar al cargar la vista
+onMounted(async () => {
+  await cargarInicial(); // 👈 primero carga todas las alertas
+});
 
 // 🔹 Volver a cargar cuando cambien las alertas globales
 watch(

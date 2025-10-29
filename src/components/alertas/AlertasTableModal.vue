@@ -270,7 +270,7 @@ function emitirSeleccionCodigo2() {
       <p v-else-if="!alerta">⏳ Cargando alerta...</p>
   
   <!-- 🔹 Caso 1: alerta NO leída (sin fecha/tiempo de reconocimiento) -->
-  <template v-if="!alerta.valida">
+  <template v-if="!alerta.valida && alerta.valida">
     <h3>✅ Validar alerta</h3>
     <label>
       <input type="checkbox" v-model="valida" />

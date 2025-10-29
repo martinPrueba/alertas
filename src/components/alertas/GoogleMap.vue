@@ -80,6 +80,7 @@ const cargarAlertas = async (f = {}) => {
 
       alertasData.alertas = data.alertas || [];
       alertasData.alertasLeidas = data.alertasLeidas || [];
+console.log("✅ Alertas filtradas:", data.alertas);
 
     } 
     else {
