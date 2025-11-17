@@ -6,6 +6,7 @@ import { loadGoogleMaps } from "@/utils/loadGoogleMaps";
 import AlertasTableModal from "./AlertasTableModal.vue";
 import emitter from "@/utils/emitter"; // 👈 añadido
 import { alertasData } from "@/stores/alertasData"; // 👈 import global
+import { createMarkerConBorde } from "@/utils/MarkerConBorde.js";
 
 
 
@@ -19,6 +20,10 @@ const mapRef = ref(null);
 let map = null;
 let gmaps = null;
 let markers = [];
+
+
+//variable que definira si la alerta es validada o rechazada para aplicar el color
+const estiloCssParaImagenAlerta = ref(null);
 
 const modoVista = ref("simple");
 const mostrarModal = ref(false);
@@ -62,6 +67,7 @@ const cargarAlertas = async (f = {}) => {
 
 
     // 🔹 Si viene "alarmasActivas: true" → llamamos a esa API directamente
+    /*
     if (filtrosLlenos.alarmasActivas === true) {
       const response = await axios.get("http://localhost:8080/api/alertas/get-alertas-activas");
       data = response.data;
@@ -70,7 +76,8 @@ const cargarAlertas = async (f = {}) => {
       alertasData.alertasLeidas = data[0]?.alertasLeidas || [];
       
     } 
-    else if (tieneFiltros) {
+     */
+    if (tieneFiltros) {
       // 👇 Si hay otros filtros → usamos el endpoint dinámico
       const response = await axios.post(
         "http://localhost:8080/api/alertas/filter-dynamic",
@@ -80,7 +87,6 @@ const cargarAlertas = async (f = {}) => {
 
       alertasData.alertas = data.alertas || [];
       alertasData.alertasLeidas = data.alertasLeidas || [];
-console.log("✅ Alertas filtradas:", data.alertas);
 
     } 
     else {
@@ -114,16 +120,6 @@ console.log("✅ Alertas filtradas:", data.alertas);
 
 let iconUrl;
 
-if (a.leida) {
-  // 🟦 Icono circular celeste con borde azul
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-      <circle cx="20" cy="20" r="18" fill="deepskyblue" stroke="blue" stroke-width="2"/>
-    </svg>
-  `;
-  iconUrl = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
-} else {
-
     // Nota la prioridad al nombre correcto en JSON (lower camelCase)
   iconUrl =
     a.iconAssocieteFromProceso ||
@@ -132,58 +128,63 @@ if (a.leida) {
 
   //// 🔴 Icono normal (rojo o el asignado por el proceso)
   //iconUrl = a.IconAssocieteFromProceso || "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+
+const position = new gmaps.LatLng(a.gpsy, a.gpsx);
+
+// Definir color del borde según tu lógica
+let colorBorde;
+
+if (a.leida === true) {
+  colorBorde = a.valida ? "green" : "red";
+} else {
+  colorBorde = null; // alerta nueva/no leída
 }
 
-const marker = new gmaps.Marker({
-  position: { lat: a.gpsy, lng: a.gpsx },
+const marker = createMarkerConBorde(
+  gmaps,
   map,
-  title: a.nombre,
-  icon: {
-    url: iconUrl,
-    scaledSize: new gmaps.Size(40, 40),
-  },
-});
-  
+  position,
+  iconUrl,
+  colorBorde
+);
 
+markers.push(marker);
+
+
+  
 let hoverTimeout = null;
 let clickTimeout = null; // 👈 para diferenciar click simple de doble
 let clickTriggered = false;
 let dblclickTriggered = false;
 
 
-marker.addListener("mouseout", () => {
+// mouseout
+marker.onMouseOut = () => {
   clearTimeout(hoverTimeout);
-});
+};
 
-//  Click: se ejecuta con delay para saber si viene un doble click
-marker.addListener("click", (event) => {
+// CLICK
+marker.onClick = () => {
   clearTimeout(hoverTimeout);
   clickTriggered = true;
 
-  // Esperamos un poco por si el usuario hace doble click
   clickTimeout = setTimeout(() => {
     if (!dblclickTriggered) {
       modoVista.value = "validar";
       abrirModal(a.alertaid);
     }
-  }, 300); // <-- si en 300ms no hubo segundo click, se asume click simple
+  }, 300);
+};
 
-  event.domEvent?.stopPropagation();
-  event.domEvent?.preventDefault();
-});
-
-//  Doble click: cancela el click simple y ejecuta relaciones
-marker.addListener("dblclick", (event) => {
+// DOBLE CLICK
+marker.onDblClick = () => {
   clearTimeout(hoverTimeout);
-  clearTimeout(clickTimeout); // 👈 cancela el click simple pendiente
+  clearTimeout(clickTimeout);
   dblclickTriggered = true;
 
   modoVista.value = "relaciones";
   abrirModal(a.alertaid);
-
-  event.domEvent?.stopPropagation();
-  event.domEvent?.preventDefault();
-});
+};
 
 
 

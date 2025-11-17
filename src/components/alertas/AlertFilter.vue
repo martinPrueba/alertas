@@ -81,7 +81,7 @@
         <!-- Inicio Evento -->
         <div class="mb-3" v-if="isVisible('inicioevento')">
           <label class="form-label">Inicio Evento</label>
-          <input v-model="filtros.inicioevento" type="datetime-local" class="form-control" />
+          <input v-model="filtros.inicioevento" type="date" class="form-control" />
         </div>
 
           <!-- Identificación Alerta -->
@@ -1052,7 +1052,7 @@ const loadData = async () =>
     else 
     {
       const msg = errMsg(p1.reason, "Error al obtener procesos");
-      alert(`❌ ${msg}`);
+      //alert(`❌ ${msg}`);
       console.error("Error get-procesos:", p1.reason);
     }
 
@@ -1064,7 +1064,7 @@ const loadData = async () =>
     else 
     {
       const msg = errMsg(p2.reason, "Error al obtener activos");
-      alert(`❌ ${msg}`);
+      //alert(`❌ ${msg}`);
       console.error("Error get-activos:", p2.reason);
     }
 
@@ -1073,14 +1073,14 @@ const loadData = async () =>
     if (p3.status === "fulfilled") 
     {
       const dataTipos = p3.value?.data || {};
-      console.log("ESTOS SON LOS TIPOS :",dataTipos)
+      //console.log("ESTOS SON LOS TIPOS :",dataTipos)
       // Mezcla todo lo que venga (procesos, nombreActivo, severidad, etc.)
       Object.assign(tipos, dataTipos);
     } 
     else 
     {
       const msg = errMsg(p3.reason, "Error al obtener tipos");
-      alert(`❌ ${msg}`);
+      //alert(`❌ ${msg}`);
       console.error("Error get-tipos:", p3.reason);
     }
 

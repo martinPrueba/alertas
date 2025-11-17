@@ -148,6 +148,10 @@ let primeraCarga = true;
 watch(
   () => [alertasData.alertas, alertasData.alertasLeidas],
   () => {
+
+    // ⛔ no ejecutar si ambos arrays están vacíos
+    if (nuevasAlertas.length === 0 && nuevasLeidas.length === 0) return;
+    
     if (primeraCarga) {
       primeraCarga = false;
       return; // 👈 no ejecuta en la primera carga

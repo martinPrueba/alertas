@@ -35,6 +35,26 @@ import GoogleMap from "../components/alertas/GoogleMap.vue";
 import ReportTable from "../components/alertas/ReportTable.vue";
 
 const filtrosAplicados = ref({});               // ⬅️ estado de filtros
+
+
+
+  // Bloquear Ctrl + Scroll
+  window.addEventListener("wheel", function (e) {
+    if (e.ctrlKey) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Bloquear Ctrl + +, Ctrl + -, Ctrl + 0
+  window.addEventListener("keydown", function (e) {
+    if (
+      (e.ctrlKey || e.metaKey) && 
+      (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0")
+    ) {
+      e.preventDefault();
+    }
+  });
+  
 </script>
 
 <style scoped>

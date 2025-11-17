@@ -15,14 +15,16 @@ const props = defineProps({
 });
 
 
+
 const emit = defineEmits(["cerrar"]);
 
 const alerta = ref(null);
 const columnas = ref([]);
 const esLeida = ref(false); // viene de alertasLeidas
 
-// Campos para marcar como leída
-const valida = ref(false);
+
+
+
 const comentario = ref("");
 
 // Relacionadas (posteriores y anteriores)
@@ -37,6 +39,11 @@ const hasCols = (cols) => Array.isArray(cols) && cols.length > 0;
 const hayPosterior = computed(() => Array.isArray(posterior.value) && posterior.value.length > 0);
 const hayAnterior  = computed(() => Array.isArray(anterior.value) && anterior.value.length > 0);
 
+
+
+
+//variable para entender el boton que se presiono
+const opcion = ref(null); 
 
 
 
@@ -69,9 +76,10 @@ const cargarAlerta = async (id) => {
     esLeida.value = alertasLeidas.some((a) => a.alertaid === id);
 
     // Reset sección marcar como leída
-    valida.value = false;
     comentario.value = "";
-  } catch (err) {
+  } 
+  catch (err) 
+  {
     console.error("❌ Error al cargar alerta:", err);
     alerta.value = null;
     columnas.value = [];
@@ -97,7 +105,6 @@ const cargarRelacionadas = async (id) => {
       posterior.value = [];
       colsPosterior.value = [];
     }
-    console.log("🔽 Posteriores:", dataPost);
   } catch (e) {
     console.error("⚠️ Error en posteriores:", e);
     posterior.value = [];
@@ -115,7 +122,6 @@ const cargarRelacionadas = async (id) => {
       anterior.value = [];
       colsAnterior.value = [];
     }
-    console.log("🔼 Anteriores:", dataPrev);
   } catch (e) {
     console.error("⚠️ Error en anteriores:", e);
     anterior.value = [];
@@ -125,29 +131,60 @@ const cargarRelacionadas = async (id) => {
 
 
 
-// Marcar como leída
 const marcarComoLeida = async () => {
   try {
-  const payload = {
-    idAlerta: props.alertaId,
-    valida: valida.value,
-    comentario: comentario.value,
-    codigo1: codigoSeleccionado.value,
-    codigo2: codigo2Seleccionado.value,
-  };
+    if (!opcion.value) 
+    {
+      alert("Selecciona aprobar o rechazar primero");
+      return;
+    }
 
-console.log("📦 Enviando payload a marcar-leida:", JSON.stringify(payload, null, 2));
+        // Validar comentario mínimo 10 caracteres
+    if (!comentario.value || comentario.value.trim().length < 10) 
+    {
+      alert("El comentario debe tener al menos 10 caracteres.");
+      return;
+    }
+
+        // 3) Validar códigos obligatorios
+    if (!codigoSeleccionado.value) 
+    {
+      alert("Debes seleccionar un código principal (codigo1).");
+      return;
+    }
+
+    if (!codigo2Seleccionado.value) 
+    {
+      alert("Debes seleccionar un código secundario (codigo2).");
+      return;
+    }
+
+    // convertir opcion → booleano
+    const valorValida = opcion.value === "aprobar";
+
+
+
+    const payload = {
+      idAlerta: props.alertaId,
+      valida: valorValida,             // 👈 aquí sí va booleano
+      comentario: comentario.value,
+      codigo1: codigoSeleccionado.value,
+      codigo2: codigo2Seleccionado.value,
+    };
+
 
     await axios.post("http://localhost:8080/api/alertas/marcar-leida", payload);
 
     alert("✅ Alerta marcada como leída");
-    window.location.reload(); // refresca el mapa/tablas del listado
+    window.location.reload();
     emit("cerrar");
+
   } catch (err) {
     console.error("❌ Error al marcar como leída:", err);
     alert("❌ No se pudo marcar como leída");
   }
 };
+
 
 
 
@@ -270,12 +307,24 @@ function emitirSeleccionCodigo2() {
       <p v-else-if="!alerta">⏳ Cargando alerta...</p>
   
   <!-- 🔹 Caso 1: alerta NO leída (sin fecha/tiempo de reconocimiento) -->
-  <template v-if="alerta.valida === null">
+  <template  v-if="alerta.valida == null">
     <h3>✅ Validar alerta</h3>
-    <label>
-      <input type="checkbox" v-model="valida" />
-      ¿Validada?
-    </label>
+
+  <button
+    :class="{ activo: opcion === 'aprobar' }"
+    @click="opcion = 'aprobar'"
+  >
+    Aprobar
+  </button>
+
+  <button
+    :class="{ activo: opcion === 'rechazar' }"
+    @click="opcion = 'rechazar'"
+  >
+    Rechazar
+  </button>
+
+
 
     <textarea
       v-model="comentario"
@@ -350,10 +399,14 @@ function emitirSeleccionCodigo2() {
 
   <!-- 🔹 Caso 2: alerta YA leída (con fecha/tiempo de reconocimiento) -->
   <template v-else>
-    <h3>📘 Alerta ya validada</h3>
+    <h3>📘 Alerta leida</h3>
     <p><strong>Fecha de reconocimiento:</strong> {{ alerta.fecha_reconocimiento }}</p>
     <p><strong>Tiempo de reconocimiento:</strong> {{ alerta.tiempo_reconocimiento }}</p>
     <p><strong>Comentario:</strong> {{ alerta.comentario || 'Sin comentario registrado' }}</p>
+    <p><strong>Id de usuario:</strong> {{ alerta.userid || 'Id de usuario no encontrado' }}</p>
+    <p><strong>Codigo1:</strong> {{ alerta.codigo1 || 'Codigo1 no encontrado' }}</p>
+    <p><strong>Codigo2:</strong> {{ alerta.codigo2 || 'Codigo2 no encontrado' }}</p>
+
   </template>
 
 </div>
@@ -511,5 +564,13 @@ textarea {
   padding: 8px 15px;
   cursor: pointer;
   border-radius: 4px;
+}
+
+.activo {
+  background-color: #4caf50;   /* verde para seleccionado */
+  color: white;
+  border-color: #3d8b40;
+  transform: scale(1.05);      /* ligero zoom para destacarlo */
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25); /* sombra bonita */
 }
 </style>
