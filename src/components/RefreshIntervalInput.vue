@@ -1,6 +1,7 @@
-<!-- src/components/alertas/RefreshIntervalInput.vue -->
 <template>
-  <div class="refresh-card">
+
+<div></div>
+<!--  <div class="refresh-card">
     <h4>Intervalo de actualización</h4>
 
     <form class="form-row" @submit.prevent="guardar">
@@ -28,10 +29,13 @@
     <p class="help">
       Debe ser un número entre 5 y 3600 segundos.
     </p>
-  </div>
+  </div> -->
+
 </template>
 
 <script setup>
+
+/*
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
@@ -94,6 +98,8 @@ const guardar = async () => {
 };
 
 onMounted(cargar);
+
+*/
 </script>
 
 <style scoped>

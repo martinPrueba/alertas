@@ -4,8 +4,9 @@
     <aside class="filtros">
       <AlertFilter @filtrar="filtrosAplicados = $event" />
 
-      <!-- Control del intervalo de actualización -->
-      <RefreshIntervalInput @interval-updated="onIntervalUpdated" />
+      <!-- Control del intervalo de actualización
+            <RefreshIntervalInput @interval-updated="onIntervalUpdated" />
+       -->
     </aside>
 
     <!-- Columna derecha: mapa + tabla -->
@@ -54,7 +55,7 @@ const filtrosAplicados = ref({});               // ⬅️ estado de filtros
       e.preventDefault();
     }
   });
-  
+
 </script>
 
 <style scoped>
