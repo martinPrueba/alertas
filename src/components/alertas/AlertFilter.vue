@@ -1006,7 +1006,9 @@
 <script setup>
 import { reactive, ref, onMounted, watch } from "vue";
 import axios from "axios";
+import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
 
+const { showAlert } = useGlobalAlert();
 
 const mostrar = ref(true);  // ahora sí es reactivo
 

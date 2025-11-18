@@ -15,6 +15,9 @@ const props = defineProps({
 });
 
 
+const { showAlert } = useGlobalAlert();
+
+import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
 
 const emit = defineEmits(["cerrar"]);
 
@@ -135,27 +138,27 @@ const marcarComoLeida = async () => {
   try {
     if (!opcion.value) 
     {
-      alert("Selecciona aprobar o rechazar primero");
+      showAlert("Selecciona aprobar o rechazar primero");
       return;
     }
 
         // Validar comentario mínimo 10 caracteres
     if (!comentario.value || comentario.value.trim().length < 10) 
     {
-      alert("El comentario debe tener al menos 10 caracteres.");
+      showAlert("El comentario debe tener al menos 10 caracteres.");
       return;
     }
 
         // 3) Validar códigos obligatorios
     if (!codigoSeleccionado.value) 
     {
-      alert("Debes seleccionar un código principal (codigo1).");
+      showAlert("Debes seleccionar un código principal (codigo1).");
       return;
     }
 
     if (!codigo2Seleccionado.value) 
     {
-      alert("Debes seleccionar un código secundario (codigo2).");
+      showAlert("Debes seleccionar un código secundario (codigo2).");
       return;
     }
 
@@ -175,13 +178,13 @@ const marcarComoLeida = async () => {
 
     await axios.post("http://localhost:8080/api/alertas/marcar-leida", payload);
 
-    alert("✅ Alerta marcada como leída");
+    showAlert("✅ Alerta marcada como leída");
     window.location.reload();
     emit("cerrar");
 
   } catch (err) {
     console.error("❌ Error al marcar como leída:", err);
-    alert("❌ No se pudo marcar como leída");
+    showAlert("❌ No se pudo marcar como leída");
   }
 };
 

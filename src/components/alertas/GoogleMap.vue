@@ -8,7 +8,9 @@ import emitter from "@/utils/emitter"; // 👈 añadido
 import { alertasData } from "@/stores/alertasData"; // 👈 import global
 import { createMarkerConBorde } from "@/utils/MarkerConBorde.js";
 
+import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
 
+const { showAlert } = useGlobalAlert();
 
 
 const props = defineProps({
@@ -193,7 +195,7 @@ marker.onDblClick = () => {
 
   } catch (err) {
     const msg = errMsg(err, "Error cargando alertas");
-    alert(`❌ ${msg}`);
+    showAlert(`❌ ${msg}`);
     console.error("❌ Error cargando alertas:", err);
   }
 };

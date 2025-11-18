@@ -26,7 +26,7 @@
 
     <!-- Renderiza el modal fuera del nav -->
     <ConfigModal :show="showModal" @close="showModal = false" />
-
+    
 </template>
 
 <script setup>

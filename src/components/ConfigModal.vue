@@ -1,77 +1,84 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click.self="close">
-    <div class="modal-content">
-      <header class="modal-header">
-        <h3>⚙ Configuración</h3>
-        <!-- <button class="close-btn" @click="close">✖</button>-->
-      </header>
 
-      <section class="modal-body">
-        <h5>Configuración de visibilidad de columnas de alertas</h5>
+  <teleport to="body">
 
-        <!-- Tabla con scroll horizontal -->
-        <div class="table-container">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Columna</th>
-                <th>Visible</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="col in columns" :key="col.fieldName">
-                <td>{{ col.fieldName }}</td>
-                <td>
-                  <!-- Checkbox refleja el valor de visible -->
-                  <input
-                    type="checkbox"
-                    v-model="col.visible"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <div v-if="show" class="modal-overlay" @click.self="close">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h3>⚙ Configuración</h3>
+          <!-- <button class="close-btn" @click="close">✖</button>-->
+        </header>
 
-        <h5>Configuración opciones de filtro</h5>
+        <section class="modal-body">
+          <h5>Configuración de visibilidad de columnas de alertas</h5>
 
-        <!-- Tabla con scroll horizontal -->
-        <div class="table-container">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Columna</th>
-                <th>Visible</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="col in columnsFilter" :key="col.fieldName">
-                <td>{{ col.fieldName }}</td>
-                <td>
-                  <!-- Checkbox refleja el valor de visible -->
-                  <input
-                    type="checkbox"
-                    v-model="col.visible"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <!-- Tabla con scroll horizontal -->
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Columna</th>
+                  <th>Visible</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="col in columns" :key="col.fieldName">
+                  <td>{{ col.fieldName }}</td>
+                  <td>
+                    <!-- Checkbox refleja el valor de visible -->
+                    <input
+                      type="checkbox"
+                      v-model="col.visible"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h5>Configuración opciones de filtro</h5>
+
+          <!-- Tabla con scroll horizontal -->
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Columna</th>
+                  <th>Visible</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="col in columnsFilter" :key="col.fieldName">
+                  <td>{{ col.fieldName }}</td>
+                  <td>
+                    <!-- Checkbox refleja el valor de visible -->
+                    <input
+                      type="checkbox"
+                      v-model="col.visible"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
 
 
-            <ProcessIconsTable />
-            
-      </section>
+              <ProcessIconsTable />
+              
+        </section>
 
-        <footer class="modal-footer">
-        <button class="btn" @click="guardarCambios();">Guardar</button>
-        <button class="btn btn-secondary" @click="close">Cerrar</button>
-        </footer>
+          <footer class="modal-footer">
+          <button class="btn" @click="guardarCambios();">Guardar</button>
+          <button class="btn btn-secondary" @click="close">Cerrar</button>
+          </footer>
+
+      </div>
+
 
     </div>
-  </div>
+  </teleport>
+
 </template>
 
 
@@ -86,11 +93,17 @@ const close = () => {
   emit("close");
 };
 
+
+
+const { showAlert } = useGlobalAlert();
+
+import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
 import { ref, onMounted, onUnmounted } from "vue";
 import axios from "axios";
 import ProcessIconsTable from "./ProcessIconsTable.vue"; // 👈 importa el componente hijo
 //import RefreshIntervalInput from "./RefreshIntervalInput.vue"; // 👈 importa el componente hijo
 import emitter from "@/utils/emitter"; // 👈 bus de eventos (mitt) para notificar al GoogleMap
+
 
 const columns = ref([]); // columnas desde la API
 const columnsFilter = ref([]); // columnas desde la API
@@ -115,7 +128,11 @@ const guardarCambios = async () => {
     console.log("Respuesta backend:", response.data);
   } catch (error) {
     console.error("Error al guardar:", error);
-    alert("❌ Error al guardar cambios");
+    //emit("alert", "❌ Error al guardar cambios")
+    showAlert("❌ Error al guardar cambios");
+
+
+    //alert("❌ Error al guardar cambios");
   }
 
 
@@ -127,13 +144,21 @@ const guardarCambios = async () => {
     console.log("Respuesta backend:", responseSaveFilter.data);
   } catch (error) {
     console.error("Error al guardar:", error);
-    alert("❌ Error al guardar cambios");
+    showAlert("❌ Error al guardar cambios");
+
+    //alert("❌ Error al guardar cambios");
   }
 
+  close(); // en vez de show.value = false
+    showAlert("Configuración guardada correctamente ✅");
 
-  alert("Configuración guardada correctamente ✅");
+  //alert("Configuración guardada correctamente ✅");
 
+setTimeout(() => {
   window.location.reload();
+}, 3000); // 2 segundos para ver la alerta
+
+  //window.location.reload();
 
 };
 

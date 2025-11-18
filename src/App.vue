@@ -1,17 +1,24 @@
 <script setup>
 import Header from './components/Header.vue'
+import { ref } from "vue";            // 👈 ESTO FALTABA
+import AppAlert from "./components/AppAlert.vue";
+
 </script>
 
 <template>
   <!-- Header fijo arriba -->
   <header class="header">
-    <Header />
+    <Header/>
   </header>
 
   <!-- Contenido debajo -->
   <main class="contenido">
     <router-view />
   </main>
+
+  <!-- 🔥 Modal global visible SIEMPRE -->
+  <AppAlert />
+  
 </template>
 
 <style>
