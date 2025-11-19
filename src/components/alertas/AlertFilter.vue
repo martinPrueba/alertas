@@ -822,18 +822,15 @@
 <!-- Valida -->
 <div class="mb-3" v-if="isVisible('valida')">
   <label class="form-label">Valida</label>
-  <div class="form-check">
-    <input
-      v-model="filtros.valida"
-      type="checkbox"
-      class="form-check-input"
-      id="validaCheck"
-    />
-    <label class="form-check-label" for="validaCheck">
-      ¿Validada?
-    </label>
-  </div>
+  <select
+    v-model="filtros.valida"
+    class="form-select"
+  >
+    <option value="true">Validada</option>
+    <option value="false">Rechazada</option>
+  </select>
 </div>
+
 
 <!-- OT -->
 <div class="mb-3" v-if="isVisible('OT')">
@@ -959,6 +956,43 @@
 
 
 
+<!-- 🔥 Inputs automáticos para columnas nuevas -->
+<div
+  v-for="campo in camposDinamicos"
+  :key="campo.fieldName"
+  class="mb-3"
+>
+  <label class="form-label">
+    {{ campo.fieldName }}
+  </label>
+
+  <!-- Si el backend entrega opciones, mostramos un select -->
+  <select
+    v-if="tipos[campo.fieldName]"
+    v-model="filtros[campo.fieldName]"
+    class="form-select"
+  >
+    <option
+      v-for="opt in tipos[campo.fieldName]"
+      :key="opt"
+      :value="opt"
+    >
+      {{ opt }}
+    </option>
+  </select>
+
+  <!-- Si no hay opciones, mostramos un input texto -->
+  <input
+    v-else
+    v-model="filtros[campo.fieldName]"
+    type="text"
+    class="form-control"
+    :placeholder="`Ingrese ${campo.fieldName}`"
+  />
+</div>
+
+
+
 
     </div>
 
@@ -1004,7 +1038,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch } from "vue";
+import { reactive, ref, onMounted, watch, computed } from "vue";
 import axios from "axios";
 import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
 
@@ -1021,12 +1055,28 @@ const filtros = reactive({
 }); // 👈 todos los filtros dinámicos van acá
 
 
+
+const camposHardcodeados = [
+  "codalerta", "nombre", "sentenciaId", "inicioevento",
+  "identificacionalerta", "nombreActivo", "proceso", "latencia",
+  "tipoServicio", "CI", "Subtiposervicio", "jitter", "disponibilidad",
+  "packetlost", "rssi", "nsr", "PLM", "tipoExWa", "codigoEvento",
+  "descripcionevento", "Origen", "tipodocumento", "estado", "resumen",
+  "titulo", "numero", "fechaestado", "razonestado", "gpsx", "gpsy",
+  "gpsz", "gpsh", "radio", "severidad", "userid", "comentario",
+  "valida", "OT", "ticket", "fecha_reconocimiento", "grupo_local",
+  "prediccion", "tiempo_reconocimiento"
+];
+
+
 const procesos = ref([]);
 const activos  = ref([]);
 
 // array dinámico de campos visibles
 const visibleFields = ref([]);
 //función que busca un campo por nombre y devuelve su visible
+
+
 const isVisible = (fieldName) => {
   const field = visibleFields.value.find(f => f.fieldName === fieldName)
   return field ? field.visible : false
@@ -1102,6 +1152,13 @@ const loadData = async () =>
   }
 
 }
+
+
+const camposDinamicos = computed(() => {
+  return visibleFields.value.filter(
+    f => f.visible && !camposHardcodeados.includes(f.fieldName)
+  );
+});
 
 
 // Helper para extraer mensaje de error del backend/axios
@@ -1199,6 +1256,37 @@ watch(
     emitirFiltros();
   }
 );
+
+
+
+watch(
+  () => filtros.fechaInicio,
+  (nueva) => {
+    if (filtros.fechaFin && nueva > filtros.fechaFin) {
+      showAlert("⚠️ La fecha de inicio no puede ser mayor que la fecha de fin.");
+
+      filtros.fechaInicio = ""; // ❌ limpiar
+    }
+
+    emitirFiltros();
+  }
+);
+
+// 🔹 Validación: fechaFin no puede ser < fechaInicio
+watch(
+  () => filtros.fechaFin,
+  (nueva) => {
+    if (filtros.fechaInicio && nueva < filtros.fechaInicio) {
+      showAlert("⚠️ La fecha de fin no puede ser menor que la fecha de inicio.");
+
+      filtros.fechaInicio = ""; // ❌ limpiar
+      filtros.fechaFin = ""; // ❌ limpiar
+    }
+
+    emitirFiltros();
+  }
+);
+
 
 </script>
 

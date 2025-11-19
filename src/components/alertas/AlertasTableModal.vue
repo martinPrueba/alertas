@@ -54,13 +54,23 @@ const opcion = ref(null);
 // Cuando el modal se abre, cargamos datos
 watch(
   () => props.mostrar,
-  async (val) => {
-    if (val && props.alertaId !== null) {
+  async (nuevoValor, valorAnterior) => {
+    // 🔵 Cuando se abre
+    if (nuevoValor && props.alertaId !== null) {
       await cargarAlerta(props.alertaId);
       await cargarRelacionadas(props.alertaId);
     }
+
+    // 🔴 Cuando se cierra
+    if (!nuevoValor && valorAnterior) {
+      opcion.value = null;
+      comentario.value = "";
+      codigoSeleccionado.value = "";
+      codigo2Seleccionado.value = "";
+    }
   }
 );
+
 
 const cargarAlerta = async (id) => {
   try {
@@ -311,7 +321,7 @@ function emitirSeleccionCodigo2() {
   
   <!-- 🔹 Caso 1: alerta NO leída (sin fecha/tiempo de reconocimiento) -->
   <template  v-if="alerta.valida == null">
-    <h3>✅ Validar alerta</h3>
+    <h3>Validar alerta</h3>
 
   <button
     :class="{ activo: opcion === 'aprobar' }"
@@ -402,7 +412,12 @@ function emitirSeleccionCodigo2() {
 
   <!-- 🔹 Caso 2: alerta YA leída (con fecha/tiempo de reconocimiento) -->
   <template v-else>
-    <h3>📘 Alerta leida</h3>
+    <h3>
+      <span v-if="alerta.valida === true">Alerta Aprobada</span>
+      <span v-else-if="alerta.valida === false">Alerta Rechazada</span>
+      <span v-else>📘 Alerta leída</span>
+    </h3>
+
     <p><strong>Fecha de reconocimiento:</strong> {{ alerta.fecha_reconocimiento }}</p>
     <p><strong>Tiempo de reconocimiento:</strong> {{ alerta.tiempo_reconocimiento }}</p>
     <p><strong>Comentario:</strong> {{ alerta.comentario || 'Sin comentario registrado' }}</p>

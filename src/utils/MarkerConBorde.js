@@ -18,7 +18,7 @@ onAdd() {
 
   this.div.innerHTML = `
     <img src="${this.imageUrl}"
-         style="width:40px;height:40px;border:3px solid ${this.bordeColor};border-radius:8px;">
+         style="width:40px;height:40px;border:4px solid ${this.bordeColor};border-radius:8px;">
   `;
 
   // ⬅️ AQUI agregamos los eventos
