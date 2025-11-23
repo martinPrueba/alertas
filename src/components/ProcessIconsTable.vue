@@ -1,6 +1,11 @@
 <template>
   <div>
     <h3>Procesos e Íconos Asociados</h3>
+
+          <button class="btn-add" type="button" @click="toggleAgregar">
+            {{ mostrarAgregar ? "Cancelar" : "➕ Agregar" }}
+          </button>
+      
     <div class="table-container">
 
 <table class="table">
@@ -46,6 +51,48 @@
       @actualizado="actualizarLocal"
     />
 
+
+        <div v-if="mostrarAgregar" class="form-container">
+      <h4>Nuevo proceso</h4>
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Proceso</span>
+          <input
+            v-model="nuevoProceso.proceso"
+            type="text"
+            class="form-control"
+            placeholder="Nombre del proceso"
+          />
+        </label>
+        <label class="form-field">
+          <span>Grupo Local</span>
+          <select v-model="nuevoProceso.grupoLocal" class="form-control">
+            <option value="" disabled>Seleccione un grupo</option>
+            <option
+              v-for="grupo in gruposLocales"
+              :key="grupo.id || grupo"
+              :value="grupo.nombre || grupo.grupoLocal || grupo"
+            >
+              {{ grupo.nombre || grupo.grupoLocal || grupo }}
+            </option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span>URL del ícono</span>
+          <input
+            v-model="nuevoProceso.iconUrl"
+            type="text"
+            class="form-control"
+            placeholder="https://..."
+          />
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn-save" type="button" @click="crearProceso">Guardar</button>
+      </div>
+    </div>
+
+
   </div>
 
 
@@ -59,6 +106,15 @@ import EditarProceso from "./EditarProceso.vue"; // 👈 Import
 const procesos = ref([]);
 const mostrarModal = ref(false);
 const procesoSeleccionado = ref({});
+
+const mostrarAgregar = ref(false);
+const nuevoProceso = ref({
+  proceso: "",
+  iconUrl: "",
+  grupoLocal: ""
+});
+const gruposLocales = ref([]);
+
 
 const cargarProcesos = async () => {
   try {
@@ -77,6 +133,59 @@ const cargarProcesos = async () => {
     console.error("Error cargando procesos:", error);
   }
 };
+
+
+const cargarGruposLocales = async () => {
+  try {
+    const response = await axios.get("http://localhost:8080/api/alertas/getall-usergrupos-locales");
+    gruposLocales.value = response.data || [];
+  } catch (error) {
+    console.error("Error cargando grupos locales:", error);
+  }
+};
+
+const toggleAgregar = () => {
+  mostrarAgregar.value = !mostrarAgregar.value;
+  if (!mostrarAgregar.value) {
+    limpiarFormulario();
+  }
+};
+
+const limpiarFormulario = () => {
+  nuevoProceso.value = {
+    proceso: "",
+    iconUrl: "",
+    grupoLocal: ""
+  };
+};
+
+const crearProceso = async () => {
+  if (!nuevoProceso.value.proceso || !nuevoProceso.value.grupoLocal) {
+    alert("Por favor complete el proceso y el grupo local.");
+    return;
+  }
+
+  try {
+    const { data } = await axios.post(
+      "http://localhost:8080/api/process-icons/create-process-icon",
+      nuevoProceso.value
+    );
+
+    procesos.value.push({
+      id: data?.id || Date.now(),
+      ...nuevoProceso.value
+    });
+
+    limpiarFormulario();
+    mostrarAgregar.value = false;
+    alert("Proceso agregado correctamente.");
+  } catch (error) {
+    console.error("Error creando proceso:", error);
+    alert("❌ Error al crear el proceso.");
+  }
+};
+
+
 
 
 const editarProceso = (proceso) => {
@@ -102,7 +211,6 @@ const eliminarProceso = async (proceso) => {
     // Eliminación en la tabla local
     procesos.value = procesos.value.filter(p => p.id !== proceso.id);
     console.log(proceso);
-    console.log("OJOOOOOOOOO");
     alert("Proceso eliminado correctamente.");
   } catch (error) {
     console.error("Error eliminando proceso:", error);
@@ -126,10 +234,12 @@ const actualizarLocal = (procesoActualizado) => {
 
 onMounted(() => {
   cargarProcesos();
+  cargarGruposLocales();
 });
 </script>
 
 <style scoped>
+
 .table-container {
   overflow-x: auto;
 }
@@ -162,4 +272,81 @@ td {
 .btn-edit:hover {
   background-color: #e0a800;
 }
+
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.btn-add {
+  background-color: #198754;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-add:hover {
+  background-color: #157347;
+}
+
+.form-container {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.btn-save {
+  background-color: #0d6efd;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-save:hover {
+  background-color: #0b5ed7;
+}
+
 </style>
