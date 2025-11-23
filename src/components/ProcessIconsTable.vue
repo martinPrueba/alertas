@@ -2,10 +2,16 @@
   <div>
     <h3>Procesos e Íconos Asociados</h3>
 
-          <button class="btn-add" type="button" @click="toggleAgregar">
-            {{ mostrarAgregar ? "Cancelar" : "➕ Agregar" }}
-          </button>
-      
+    <div class="div-boton-agregar">
+      <button class="btn-add" type="button" @click="toggleAgregar">
+        {{ mostrarAgregar ? "Cancelar" : "➕ Agregar" }}
+      </button>
+
+      <br>
+    </div>
+
+            <br>
+
     <div class="table-container">
 
 <table class="table">
@@ -268,6 +274,8 @@ td {
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
+    width: 110px;
+
 }
 .btn-edit:hover {
   background-color: #e0a800;
@@ -282,6 +290,8 @@ td {
   border-radius: 4px;
   cursor: pointer;
   margin-left: 8px;
+    width: 110px;
+
 }
 
 .btn-delete:hover {
