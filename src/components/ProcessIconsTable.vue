@@ -2,34 +2,39 @@
   <div>
     <h3>Procesos e Íconos Asociados</h3>
     <div class="table-container">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Proceso</th>
-            <th>IconAssocieteFromProceso</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="proceso in procesos" :key="proceso.id">
-            <td>{{ proceso.proceso }}</td>
-            <td>
-              <img
-                v-if="proceso.iconUrl"
-                :src="proceso.iconUrl"
-                alt="icono"
-                class="icon-img"
-              />
-              <span v-else>No tiene ícono</span>
-            </td>
-            <td>
-              <button class="btn-edit" @click="editarProceso(proceso)">
-                ✏ Editar
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Proceso</th>
+      <th>Grupo Local</th>
+      <th>Ícono</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="proceso in procesos" :key="proceso.id">
+      <td>{{ proceso.proceso }}</td>
+      <td>{{ proceso.grupoLocal }}</td>
+
+      <td>
+        <img
+          v-if="proceso.iconUrl"
+          :src="proceso.iconUrl"
+          alt="icono"
+          class="icon-img"
+        />
+        <span v-else>No tiene ícono</span>
+      </td>
+
+      <td>
+        <button class="btn-edit" @click="editarProceso(proceso)">✏ Editar</button>
+        <button class="btn-delete" @click="eliminarProceso(proceso)">🗑 Eliminar</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
     </div>
 
 
@@ -59,12 +64,13 @@ const cargarProcesos = async () => {
   try {
     const response = await axios.get("http://localhost:8080/api/process-icons/get-all");
 
-    // convertir {key: value} en [{ proceso: key, iconUrl: value }]
-    procesos.value = Object.entries(response.data).map(([proceso, iconUrl], index) => ({
-      id: index + 1,
-      proceso,
-      iconUrl: iconUrl !== "No existe un icono asociado a este proceso." ? iconUrl : null
+    procesos.value = response.data.map(p => ({
+      id: p.id,
+      proceso: p.proceso,
+      iconUrl: p.iconUrl,
+      grupoLocal: p.grupoLocal
     }));
+
 
     console.log("Procesos transformados:", procesos.value);
   } catch (error) {
@@ -81,6 +87,29 @@ console.log("esto nos llego de proceso " + JSON.stringify(proceso));
   console.log("mostrarModal", mostrarModal.value);
 
 };
+
+
+const eliminarProceso = async (proceso) => {
+  // Confirmación al usuario
+  const ok = confirm(`¿Seguro que deseas eliminar el ícono del proceso "${proceso.proceso}"?`);
+  if (!ok) return;
+
+  try {
+
+    // Llamada DELETE enviando el ID
+    await axios.delete(`http://localhost:8080/api/process-icons/delete/${proceso.id}`);
+
+    // Eliminación en la tabla local
+    procesos.value = procesos.value.filter(p => p.id !== proceso.id);
+    console.log(proceso);
+    console.log("OJOOOOOOOOO");
+    alert("Proceso eliminado correctamente.");
+  } catch (error) {
+    console.error("Error eliminando proceso:", error);
+    alert("❌ Error al eliminar el proceso.");
+  }
+};
+
 
 // cerrar modal
 const cerrarModal = () => {

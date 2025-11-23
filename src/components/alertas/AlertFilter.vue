@@ -589,7 +589,7 @@
         <!-- Fecha Estado -->
         <div class="mb-3" v-if="isVisible('fechaestado')">
           <label class="form-label">Fecha Estado</label>
-          <input v-model="filtros.fechaestado" type="datetime-local" class="form-control" />
+          <input v-model="filtros.fechaestado" type="date" class="form-control" />
         </div>
 
 <!-- Razón Estado -->
@@ -890,14 +890,36 @@
         <!-- Fecha Reconocimiento -->
         <div class="mb-3" v-if="isVisible('fecha_reconocimiento')">
           <label class="form-label">Fecha Reconocimiento</label>
-          <input v-model="filtros.fechaReconocimiento" type="datetime-local" class="form-control" />
+          <input v-model="filtros.fechaReconocimiento" type="date" class="form-control" />
         </div>
 
-        <!-- Grupo Local -->
-        <div class="mb-3" v-if="isVisible('grupo_local')">
-          <label class="form-label">Grupo Local</label>
-          <input v-model="filtros.grupoLocal" type="text" class="form-control" />
-        </div>
+<!-- Grupo Local -->
+<div class="mb-3" v-if="isVisible('grupo_local')">
+  <label class="form-label">Grupo Local</label>
+
+  <select
+    v-if="tipos.grupo_local && tipos.grupo_local.length > 0"
+    v-model="filtros.grupo_local"
+    class="form-select"
+  >
+    <option
+      v-for="opt in tipos.grupo_local"
+      :key="opt"
+      :value="opt"
+    >
+      {{ opt }}
+    </option>
+  </select>
+
+  <input
+    v-else
+    v-model="filtros.grupo_local"
+    type="text"
+    class="form-control"
+    placeholder="Ingrese grupo local"
+  />
+</div>
+
 
 <!-- Predicción -->
 <div class="mb-3" v-if="isVisible('prediccion')">
@@ -966,9 +988,9 @@
     {{ campo.fieldName }}
   </label>
 
-  <!-- Si el backend entrega opciones, mostramos un select -->
+  <!-- Caso 1: El backend entrega opciones Y hay valores -->
   <select
-    v-if="tipos[campo.fieldName]"
+    v-if="tipos[campo.fieldName] && tipos[campo.fieldName].length > 0"
     v-model="filtros[campo.fieldName]"
     class="form-select"
   >
@@ -981,15 +1003,24 @@
     </option>
   </select>
 
-  <!-- Si no hay opciones, mostramos un input texto -->
+  <!-- Caso 2: El backend entrega la key pero está VACÍA -->
   <input
-    v-else
-    v-model="filtros[campo.fieldName]"
+    v-else-if="tipos[campo.fieldName] && tipos[campo.fieldName].length === 0"
     type="text"
     class="form-control"
-    :placeholder="`Ingrese ${campo.fieldName}`"
+    placeholder="No existen valores"
+    disabled
   />
+
+  <!-- Caso 3: El campo NO existe en tipos -->
+  <div
+    v-else
+    class="alert alert-warning p-2"
+  >
+    No existen valores para filtrar este campo
+  </div>
 </div>
+
 
 
 
