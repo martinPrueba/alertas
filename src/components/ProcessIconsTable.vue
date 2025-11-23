@@ -58,7 +58,7 @@
     />
 
 
-        <div v-if="mostrarAgregar" class="form-container">
+    <div v-if="mostrarAgregar" class="form-container">
       <h4>Nuevo proceso</h4>
       <div class="form-grid">
         <label class="form-field">
@@ -86,11 +86,17 @@
         <label class="form-field">
           <span>URL del ícono</span>
           <input
-            v-model="nuevoProceso.iconUrl"
-            type="text"
+            type="file"
+            accept="image/*"
             class="form-control"
-            placeholder="https://..."
+            @change="handleIconFile"
           />
+          <small v-if="iconUploadNombre">{{ iconUploadNombre }}</small>
+          <small v-else>Seleccione un archivo de imagen para subir.</small>
+          <small v-if="nuevoProceso.iconUrl" class="upload-success">
+            Ícono subido correctamente.
+          </small>
+          <small v-if="subiendoIcono" class="upload-progress">Subiendo ícono...</small>
         </label>
       </div>
       <div class="actions">
@@ -123,6 +129,8 @@ const nuevoProceso = ref({
   grupoLocal: ""
 });
 const gruposLocales = ref([]);
+const subiendoIcono = ref(false);
+const iconUploadNombre = ref("");
 
 
 const cargarProcesos = async () => {
@@ -166,11 +174,48 @@ const limpiarFormulario = () => {
     iconUrl: "",
     grupoLocal: ""
   };
+  iconUploadNombre.value = "";
+  subiendoIcono.value = false;
+};
+
+const handleIconFile = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  iconUploadNombre.value = file.name;
+  subiendoIcono.value = true;
+
+  try {
+    const { data } = await axios.post(
+      "http://localhost:8080/api/files/icon",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    nuevoProceso.value.iconUrl = data?.fileUrl || data?.fileUrl || data?.fileUrl || data;
+  } catch (error) {
+    console.error("Error subiendo el ícono:", error);
+    alert("❌ Error al subir el ícono. Intente nuevamente.");
+    nuevoProceso.value.iconUrl = "";
+  } finally {
+    subiendoIcono.value = false;
+  }
 };
 
 const crearProceso = async () => {
   if (!nuevoProceso.value.proceso || !nuevoProceso.value.grupoLocal) {
-    showAlert("Por favor complete el proceso y el grupo local.");
+    alert("Por favor complete el proceso y el grupo local.");
+    return;
+  }
+
+  if (!nuevoProceso.value.iconUrl) {
+    alert("Por favor cargue el ícono antes de guardar.");
     return;
   }
 
@@ -187,10 +232,10 @@ const crearProceso = async () => {
 
     limpiarFormulario();
     mostrarAgregar.value = false;
-    showAlert("Proceso agregado correctamente.")
+    alert("Proceso agregado correctamente.");
   } catch (error) {
     console.error("Error creando proceso:", error);
-    showAlert("❌ Error al crear el proceso.")
+    alert("❌ Error al crear el proceso.");
   }
 };
 

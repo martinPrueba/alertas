@@ -419,7 +419,6 @@ function emitirSeleccionCodigo2() {
     </h3>
 
     <p><strong>Fecha de reconocimiento:</strong> {{ alerta.fecha_reconocimiento }}</p>
-    <p><strong>Tiempo de reconocimiento:</strong> {{ alerta.tiempo_reconocimiento }}</p>
     <p><strong>Comentario:</strong> {{ alerta.comentario || 'Sin comentario registrado' }}</p>
     <p><strong>Id de usuario:</strong> {{ alerta.userid || 'Id de usuario no encontrado' }}</p>
     <p><strong>Codigo1:</strong> {{ alerta.codigo1 || 'Codigo1 no encontrado' }}</p>
