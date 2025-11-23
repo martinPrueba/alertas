@@ -38,9 +38,9 @@
         <span v-else>No tiene ícono</span>
       </td>
 
-      <td>
-        <button class="btn-edit" @click="editarProceso(proceso)">✏ Editar</button>
-        <button class="btn-delete" @click="eliminarProceso(proceso)">🗑 Eliminar</button>
+      <td class="actions-cell">
+        <button class="btn-edit" @click="editarProceso(proceso)">✏</button>
+        <button class="btn-delete" @click="eliminarProceso(proceso)">🗑</button>
       </td>
     </tr>
   </tbody>
@@ -108,7 +108,10 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import EditarProceso from "./EditarProceso.vue"; // 👈 Import
+import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
 
+
+const { showAlert } = useGlobalAlert();
 const procesos = ref([]);
 const mostrarModal = ref(false);
 const procesoSeleccionado = ref({});
@@ -167,7 +170,7 @@ const limpiarFormulario = () => {
 
 const crearProceso = async () => {
   if (!nuevoProceso.value.proceso || !nuevoProceso.value.grupoLocal) {
-    alert("Por favor complete el proceso y el grupo local.");
+    showAlert("Por favor complete el proceso y el grupo local.");
     return;
   }
 
@@ -184,10 +187,10 @@ const crearProceso = async () => {
 
     limpiarFormulario();
     mostrarAgregar.value = false;
-    alert("Proceso agregado correctamente.");
+    showAlert("Proceso agregado correctamente.")
   } catch (error) {
     console.error("Error creando proceso:", error);
-    alert("❌ Error al crear el proceso.");
+    showAlert("❌ Error al crear el proceso.")
   }
 };
 
@@ -217,10 +220,10 @@ const eliminarProceso = async (proceso) => {
     // Eliminación en la tabla local
     procesos.value = procesos.value.filter(p => p.id !== proceso.id);
     console.log(proceso);
-    alert("Proceso eliminado correctamente.");
+    showAlert("Proceso eliminado correctamente.")
   } catch (error) {
     console.error("Error eliminando proceso:", error);
-    alert("❌ Error al eliminar el proceso.");
+    showAlert("❌ Error al eliminar el proceso.")
   }
 };
 
@@ -274,7 +277,7 @@ td {
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
-    width: 110px;
+    width: 40px;
 
 }
 .btn-edit:hover {
@@ -290,7 +293,7 @@ td {
   border-radius: 4px;
   cursor: pointer;
   margin-left: 8px;
-    width: 110px;
+    width: 40px;
 
 }
 
@@ -358,5 +361,12 @@ td {
 .btn-save:hover {
   background-color: #0b5ed7;
 }
+
+.actions-cell {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
 
 </style>
