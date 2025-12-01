@@ -18,7 +18,6 @@
   <thead>
     <tr>
       <th>Proceso</th>
-      <th>Grupo Local</th>
       <th>Ícono</th>
       <th>Acciones</th>
     </tr>
@@ -26,7 +25,6 @@
   <tbody>
     <tr v-for="proceso in procesos" :key="proceso.id">
       <td>{{ proceso.proceso }}</td>
-      <td>{{ proceso.grupoLocal }}</td>
 
       <td>
         <img
@@ -70,19 +68,7 @@
             placeholder="Nombre del proceso"
           />
         </label>
-        <label class="form-field">
-          <span>Grupo Local</span>
-          <select v-model="nuevoProceso.grupoLocal" class="form-control">
-            <option value="" disabled>Seleccione un grupo</option>
-            <option
-              v-for="grupo in gruposLocales"
-              :key="grupo.id || grupo"
-              :value="grupo.nombre || grupo.grupoLocal || grupo"
-            >
-              {{ grupo.nombre || grupo.grupoLocal || grupo }}
-            </option>
-          </select>
-        </label>
+
         <label class="form-field">
           <span>URL del ícono</span>
           <input
@@ -126,9 +112,7 @@ const mostrarAgregar = ref(false);
 const nuevoProceso = ref({
   proceso: "",
   iconUrl: "",
-  grupoLocal: ""
 });
-const gruposLocales = ref([]);
 const subiendoIcono = ref(false);
 const iconUploadNombre = ref("");
 
@@ -140,9 +124,8 @@ const cargarProcesos = async () => {
     procesos.value = response.data.map(p => ({
       id: p.id,
       proceso: p.proceso,
-      iconUrl: p.iconUrl,
-      grupoLocal: p.grupoLocal
-    }));
+      iconUrl: p.iconUrl
+      }));
 
 
     console.log("Procesos transformados:", procesos.value);
@@ -151,15 +134,6 @@ const cargarProcesos = async () => {
   }
 };
 
-
-const cargarGruposLocales = async () => {
-  try {
-    const response = await axios.get("http://localhost:8080/api/alertas/getall-usergrupos-locales");
-    gruposLocales.value = response.data || [];
-  } catch (error) {
-    console.error("Error cargando grupos locales:", error);
-  }
-};
 
 const toggleAgregar = () => {
   mostrarAgregar.value = !mostrarAgregar.value;
@@ -172,7 +146,6 @@ const limpiarFormulario = () => {
   nuevoProceso.value = {
     proceso: "",
     iconUrl: "",
-    grupoLocal: ""
   };
   iconUploadNombre.value = "";
   subiendoIcono.value = false;
@@ -209,8 +182,8 @@ const handleIconFile = async (event) => {
 };
 
 const crearProceso = async () => {
-  if (!nuevoProceso.value.proceso || !nuevoProceso.value.grupoLocal) {
-    alert("Por favor complete el proceso y el grupo local.");
+  if (!nuevoProceso.value.proceso) {
+    alert("Por favor complete el proceso");
     return;
   }
 
@@ -288,7 +261,6 @@ const actualizarLocal = (procesoActualizado) => {
 
 onMounted(() => {
   cargarProcesos();
-  cargarGruposLocales();
 });
 </script>
 
