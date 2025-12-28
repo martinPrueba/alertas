@@ -1072,6 +1072,7 @@
 import { reactive, ref, onMounted, watch, computed } from "vue";
 import axios from "axios";
 import { useGlobalAlert } from "@/stores/useGlobalAlert.js";
+import emitter from "@/utils/emitter";
 
 const { showAlert } = useGlobalAlert();
 
@@ -1263,6 +1264,7 @@ const limpiar = () => {
   filtros.fechaFin = fechaFinTemp;
 
   emitirFiltros();
+  emitter.emit('REPORT_RESET');
 
 };
 
@@ -1342,3 +1344,5 @@ watch(
   gap: 6px;
 }
 </style>
+
+

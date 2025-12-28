@@ -96,8 +96,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import axios from "axios";
+import emitter from "@/utils/emitter";
 import { alertasData } from "@/stores/alertasData"; // 👈 import global
 
 const data = ref({
@@ -106,6 +107,25 @@ const data = ref({
   alertasPorTipoServicio: {},
   cantidadActivas: 0
 });
+
+const cargarReporteCompleto = async () => {
+  try {
+    const response = await axios.get(
+      "http://localhost:8080/api/alertas/get-all-alerts"
+    );
+    const wrapper = Array.isArray(response.data) ? response.data[0] : response.data;
+    const alertas = wrapper?.alertas || [];
+    const alertasLeidas = wrapper?.alertasLeidas || [];
+
+    const reporteResponse = await axios.post(
+      "http://localhost:8080/api/alertas/reporte-alertas-dynamic",
+      { alertas, alertasLeidas }
+    );
+    data.value = reporteResponse.data;
+  } catch (error) {
+    console.error("ƒ?O Error cargando reporte completo:", error);
+  }
+};
 
 // 🔹 Función para cargar el reporte dinámico
 const cargarReporte = async () => {
@@ -140,7 +160,12 @@ const cargarInicial = async () => {
 
 // 🔹 Llamar al cargar la vista
 onMounted(async () => {
-  await cargarInicial(); // 👈 primero carga todas las alertas
+  await cargarInicial(); // �Y'^ primero carga todas las alertas
+  emitter.on("REPORT_RESET", cargarReporteCompleto);
+});
+
+onUnmounted(() => {
+  emitter.off("REPORT_RESET", cargarReporteCompleto);
 });
 
 let primeraCarga = true;
@@ -154,6 +179,8 @@ watch(
       primeraCarga = false;
       return; // 👈 no ejecuta en la primera carga
     }
+
+
     cargarReporte();
   },
   { deep: true }
@@ -195,3 +222,5 @@ th, td {
   text-align: center;
 }
 </style>
+
+
