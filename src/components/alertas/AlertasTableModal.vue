@@ -24,6 +24,7 @@ const emit = defineEmits(["cerrar"]);
 const alerta = ref(null);
 const columnas = ref([]);
 const esLeida = ref(false); // viene de alertasLeidas
+const alertaLeida = ref(null);
 
 
 
@@ -88,6 +89,18 @@ const cargarAlerta = async (id) => {
 
     esLeida.value = alertasLeidas.some((a) => a.alertaid === id);
 
+    if (esLeida.value || encontrada?.valida !== null) {
+      try {
+        const respLeida = await axios.get(`http://localhost:8080/api/alertas/get-alerta-leida/${id}`);
+        alertaLeida.value = respLeida?.data || null;
+      } catch (e) {
+        console.error("Error al cargar alerta leida:", e);
+        alertaLeida.value = null;
+      }
+    } else {
+      alertaLeida.value = null;
+    }
+
     // Reset sección marcar como leída
     comentario.value = "";
   } 
@@ -97,6 +110,7 @@ const cargarAlerta = async (id) => {
     alerta.value = null;
     columnas.value = [];
     esLeida.value = false;
+    alertaLeida.value = null;
   }
 };
 
@@ -418,11 +432,11 @@ function emitirSeleccionCodigo2() {
       <span v-else>📘 Alerta leída</span>
     </h3>
 
-    <p><strong>Fecha de reconocimiento:</strong> {{ alerta.fecha_reconocimiento }}</p>
-    <p><strong>Comentario:</strong> {{ alerta.comentario || 'Sin comentario registrado' }}</p>
-    <p><strong>Id de usuario:</strong> {{ alerta.userid || 'Id de usuario no encontrado' }}</p>
-    <p><strong>Codigo1:</strong> {{ alerta.codigo1 || 'Codigo1 no encontrado' }}</p>
-    <p><strong>Codigo2:</strong> {{ alerta.codigo2 || 'Codigo2 no encontrado' }}</p>
+    <p><strong>Fecha de reconocimiento:</strong> {{ alertaLeida?.fechaReconocimiento || alerta.fecha_reconocimiento }}</p>
+    <p><strong>Comentario:</strong> {{ alertaLeida?.comentario || alerta.comentario || 'Sin comentario registrado' }}</p>
+    <p><strong>Id de usuario:</strong> {{ alertaLeida?.userid || alerta.userid || 'Id de usuario no encontrado' }}</p>
+    <p><strong>Codigo1:</strong> {{ alertaLeida?.codigo1 || alerta.codigo1 || 'Codigo1 no encontrado' }}</p>
+    <p><strong>Codigo2:</strong> {{ alertaLeida?.codigo2 || alerta.codigo2 || 'Codigo2 no encontrado' }}</p>
 
   </template>
 
